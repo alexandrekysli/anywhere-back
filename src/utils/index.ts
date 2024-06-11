@@ -42,6 +42,7 @@ export default class {
      * @param {string} `folder` - The folder who operation been run
      * @param {number} `contentType` - Type of content `0` All - `1` File - `2` Folder
      * @param {boolean} `showFileExtension` - Showing extension ?
+     * @param {boolean} `grouped` - Return grouped
     */
     static getFolderContentSync = (
         folder: string,

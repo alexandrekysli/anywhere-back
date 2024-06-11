@@ -9,9 +9,14 @@ type NetworkInterfaces = { name: string, mac: string, address: string, mask: str
 
 let errorMessage = ''
 let requireEnvProperties = [
+    'KE_APP_ID',
     'KE_HTTP_PORT',
     'KE_HTTP_SESSION_SECRET',
     'KE_HTTP_SESSION_MAXDAY',
+    'KE_DATABASE_MONGO_HOST',
+    'KE_DATABASE_MONGO_PORT',
+    'KE_DATABASE_MONGO_USER',
+    'KE_DATABASE_MONGO_PASSWORD'
 ]
 let interfaceToListen: NetworkInterfaces | false = false
 const envKEPropertiesName = Object.getOwnPropertyNames(process.env).filter(x => x.includes('KE_'))
@@ -32,7 +37,7 @@ for (const property of envKEProperties) {
         requireEnvProperties = [property.name]
         break
     }else if(
-        ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY'].includes(property.name) &&
+        ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_DATABASE_MONGO_PORT'].includes(property.name) &&
         isNaN(Number(property.value))
     ){
         // -> Detect if env numeric property incorrectly set        
@@ -55,7 +60,7 @@ for (const property of envKEProperties) {
 
 // -> Parse and save error message
 const undefinedRequiredEnvProperty = requireEnvProperties.length ? requireEnvProperties.toString().replace(/\,/g, ', ') : ''
-if(undefinedRequiredEnvProperty) errorMessage = `the property < ${undefinedRequiredEnvProperty} > not correctly defined in .env file`
+if(undefinedRequiredEnvProperty) errorMessage = `the propert${requireEnvProperties.length > 1 ? 'ies' : 'y'} < ${undefinedRequiredEnvProperty} > not correctly defined in .env file`
 
 
 /**
@@ -66,14 +71,22 @@ if(undefinedRequiredEnvProperty) errorMessage = `the property < ${undefinedRequi
 export default {
     error: errorMessage,
     root: path.join(__dirname, '..'),
+    "ke-app-id": getParsedProperty('KE_APP_ID').toString(),
     infrastructure: {
-        http: {
+        web: {
             interface: interfaceToListen,
             port: getParsedProperty('KE_HTTP_PORT'),
             secured: Boolean(getParsedProperty('KE_HTTP_SECURE')),
             sessin: {
                 secret: getParsedProperty('KE_HTTP_SESSION_SECRET'),
                 cookie_max_day: getParsedProperty('KE_HTTP_SESSION_MAXDAY')
+            }
+        },
+        database: {
+            mongo: {
+                host: getParsedProperty('KE_DATABASE_MONGO_HOST') + ':' + getParsedProperty('KE_DATABASE_MONGO_PORT'),
+                user: getParsedProperty('KE_DATABASE_MONGO_USER'),
+                password: encodeURIComponent(getParsedProperty('KE_DATABASE_MONGO_PASSWORD'))
             }
         }
     }
@@ -105,7 +118,7 @@ function getServerExternalInterface () {
 
 /** Retrieve good property value from envKEProperties */
 function getParsedProperty (name: string) {
-    const numberItem = ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_HTTP_SECURE']
+    const numberItem = ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_HTTP_SECURE', 'KE_DATABASE_MONGO_PORT']
     const item = envKEProperties.filter(x => x.name === name)[0]
     if(!item) return ''
 

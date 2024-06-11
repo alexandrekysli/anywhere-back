@@ -1,6 +1,9 @@
 {
   "name": "anywhere-back",
   "version": "1.0.0",
+  "imports": {
+    "#interfaces/*": "./dist/interfaces/*"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -15,7 +18,10 @@
   "dependencies": {
     "@types/node": "^20.14.1",
     "dotenv": "^16.4.5",
-    "tsc-watch": "^6.2.0",
+    "mongodb": "^6.7.0",
+    "tsc-watch": "^6.2.0"
+  },
+  "devDependencies": {
     "typescript": "^5.4.5"
   }
 }
