@@ -2,7 +2,7 @@
   "name": "anywhere-back",
   "version": "1.0.0",
   "imports": {
-    "#interfaces/*": "./dist/interfaces/*"
+    "#utils/*": "./dist/utils/*"
   },
   "description": "",
   "main": "index.js",

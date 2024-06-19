@@ -4,6 +4,8 @@
  * Anywhere
  */
 
-export default abstract class {
+abstract class Interface {
     abstract addNewLogItem(item: AdlogSavedItem): Promise<{ state: boolean, err: string }>
 }
+
+export default Interface

@@ -9,7 +9,6 @@ type NetworkInterfaces = { name: string, mac: string, address: string, mask: str
 
 let errorMessage = ''
 let requireEnvProperties = [
-    'KE_APP_ID',
     'KE_HTTP_PORT',
     'KE_HTTP_SESSION_SECRET',
     'KE_HTTP_SESSION_MAXDAY',
@@ -71,7 +70,6 @@ if(undefinedRequiredEnvProperty) errorMessage = `the propert${requireEnvProperti
 export default {
     error: errorMessage,
     root: path.join(__dirname, '..'),
-    "ke-app-id": getParsedProperty('KE_APP_ID').toString(),
     infrastructure: {
         web: {
             interface: interfaceToListen,

@@ -1,9 +1,9 @@
-import MongoAdlogsRepository from "../../infrastructure/database/adlogs/MongoAdlogsRepository"
+import Repository from "./repositories/IAdlogsRepository"
 import { EventEmitter } from "node:events"
 
 /** Types */
 type RuntimeEvent = {
-    type: 'stop' | 'warning' | 'info',
+    type: 'ready' | 'stop' | 'warning' | 'info',
     date?: number,
     category: 'global' | 'rock' | 'archange' | 'app',
     message: string,
@@ -25,13 +25,14 @@ export default class {
     private hub = new EventEmitter()
     private runtimeEventMessageListennerList: Array<EventMessageListenner> = []
     private pendingLogItems: RuntimeEvent[] = []
-    private repo: MongoAdlogsRepository | undefined
+    private repo: Repository | undefined
 
-    constructor() {
+    constructor() {        
         // -> Set listener
         this.hub.on('app-runtime', (data: RuntimeEvent) => {
             if(data.date){
-                console.log(`${data.type === 'info' ? '🚀' : data.type === 'stop' ? '❌' : '⚠️ '} ${new Date(data.date).toISOString()} [ ${data.category} ]`, data.message)
+                const emoji = { ready: '🚀', info: '✅', warning: '⚠️ ', stop: '💥' }
+                console.log(`${emoji[data.type]} ${new Date(data.date).toISOString()} [ ${data.category} ]`, data.message)
 
                 if (data.type === "stop" && !data.save) {
                     console.log('💥 k-engine has been closed !')
@@ -81,7 +82,7 @@ export default class {
         })
     }
 
-    public setRepo = (repo: MongoAdlogsRepository) => {
+    public setRepo = (repo: Repository) => {
         this.repo = repo
         
         // -> Saving pending log item 

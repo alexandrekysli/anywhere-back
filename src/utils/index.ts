@@ -5,6 +5,15 @@ import Crypto from "node:crypto"
 /** Types */
 type FolderElement = { name: string, type: 'folder' | 'file' | undefined }
 type FolderContent = { folder: Array<FolderElement>, file: Array<FolderElement> }
+type SchemaValidationField = { name: string, type: string, required: boolean }
+type MongoSchemaValidation = {
+    $jsonSchema: {
+        bsonType: 'object',
+        required: string[],
+        additionalProperties: false,
+        properties: {[key: string]: string | {}}
+    }
+}
 
 /**
  * # Utils
@@ -113,5 +122,31 @@ export default class {
      */
     static makeMD5 = (value: string) => {
         return Crypto.createHash('md5').update(value).digest("hex")
+    }
+
+    /**
+     * Return mongoDB validation schema
+     * @param collectionName name of collection (if existing)
+     * @param fields database schema to use for collection validation
+     */
+    static makeMongoSchemaValidation = (fields: SchemaValidationField[]) : MongoSchemaValidation => {
+        const schema: MongoSchemaValidation = {
+            $jsonSchema: {
+                bsonType: 'object',
+                required: [],
+                additionalProperties: false,
+                properties: { _id: {} }
+            }
+        }
+
+        for (const field of fields) {
+            field.required && schema.$jsonSchema.required.push(field.name)
+            schema.$jsonSchema.properties[field.name] = {
+                bsonType: field.type,
+                description: `${field.name} is required and must be a ${field.type}`
+            }
+        }
+
+        return schema
     }
 }
