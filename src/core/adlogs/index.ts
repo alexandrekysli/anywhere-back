@@ -5,7 +5,7 @@ import { EventEmitter } from "node:events"
 type RuntimeEvent = {
     type: 'ready' | 'stop' | 'warning' | 'info',
     date?: number,
-    category: 'global' | 'rock' | 'archange' | 'app',
+    category: 'global' | 'rock' | 'archange' | 'heaven' | 'app',
     message: string,
     save?: boolean
 }
@@ -16,9 +16,10 @@ type EventMessageListenner = {
 }
 
 /**
- * Adlogs
- * ---
+ * # Adlogs
  * Advanced Logging System
+ * ---
+ * k-engine
  */
 
 export default class {
@@ -29,7 +30,7 @@ export default class {
 
     constructor() {        
         // -> Set listener
-        this.hub.on('app-runtime', (data: RuntimeEvent) => {
+        this.hub.on('app-runtime', async (data: RuntimeEvent) => {
             if(data.date){
                 const emoji = { ready: '🚀', info: '✅', warning: '⚠️ ', stop: '💥' }
                 console.log(`${emoji[data.type]} ${new Date(data.date).toISOString()} [ ${data.category} ]`, data.message)
@@ -46,24 +47,24 @@ export default class {
                         if (listenner.oneCall) this.runtimeEventMessageListennerList.splice(i, 1)
                     }
                 })
-
                 // -> Save
                 if(data.save && this.repo){
                     delete data.save
-                    this.repo.addNewLogItem(data)
-                    .then((d) => {
-                        console.log(d)
-                        if(data.type === "stop"){
-                            console.log('💥 k-engine has been closed !')
-                            process.exit(1)
-                        }
-                    })
-                }
+                    await this.repo.save(data)
+                    if(data.type === 'stop'){
+                        console.log('💥 k-engine has been closed !')
+                        process.exit(1)
+                    }
+                }else if(data.save) this.pendingLogItems.push(data)
             }
         })
     }
 
-    /** Public methods */
+    /**
+     * ###
+     * PUBLIC METHOD
+     * ###
+     */
 
     public writeRuntimeEvent = (data: RuntimeEvent) => {
         data.date = Date.now()
@@ -82,9 +83,12 @@ export default class {
         })
     }
 
-    public setRepo = (repo: Repository) => {
+    public setRepo = async (repo: Repository) => {
         this.repo = repo
-        
         // -> Saving pending log item 
+        for (const item of this.pendingLogItems){
+            delete item.save
+            await this.repo.save(item)
+        }
     }
 }

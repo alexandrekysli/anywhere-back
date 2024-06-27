@@ -9,6 +9,7 @@
 
 import engineConfig from "./config"
 import Adlogs from "./core/adlogs"
+import Heaven from "./core/heaven"
 import { MongoBase } from "./core/rock"
 import AdlogsMongoRepository from "./core/adlogs/repositories/AdlogsMongoRepository"
 
@@ -17,17 +18,22 @@ import AdlogsMongoRepository from "./core/adlogs/repositories/AdlogsMongoReposit
 const adlogs = new Adlogs()
 const mongoBase = new MongoBase(adlogs, engineConfig.infrastructure.database.mongo)
 
-
+adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting' })
 adlogs.setRepo(new AdlogsMongoRepository(mongoBase.client))
 
-adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting'})
-
-// -> Check config state
+// -> Check if good app configuration
 if(engineConfig.error){
     adlogs.writeRuntimeEvent({
         category: 'global',
         type: 'stop',
         message: `bad configuration - ${engineConfig.error} -`, save: true 
     })
-} else adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'good configuration data' })
+} else {
+    // -> Good configuration -> next step when db is OK
+
+    adlogs.listenRuntimeEventMessage('mongodb server has correctly start', () => {
+        // -> Starting Heaven web server
+        const heaven = new Heaven(adlogs, engineConfig, mongoBase,'express')
+    }, true)
+}
 

@@ -9,7 +9,7 @@
         "sourceMap": false,
         "skipLibCheck": true,
         "rootDir": "src",
-        "outDir": "dist",
+        "outDir": "dist"
     },
     "include": ["src/**/*", "types"]
 }

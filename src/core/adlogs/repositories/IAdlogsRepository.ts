@@ -1,11 +1,11 @@
 /**
  * Adlogs Repository Interface
  * ---
- * Anywhere
+ * k-engine
  */
 
 abstract class Interface {
-    abstract addNewLogItem(item: AdlogSavedItem): Promise<{ state: boolean, err: string }>
+    abstract save(item: AdlogSavedItem): Promise<{ state: boolean, err: string }>
 }
 
 export default Interface

@@ -7,6 +7,6 @@ type AdlogSavedItem = {
     id?: string,
     type: 'ready' | 'stop' | 'warning' | 'info',
     date?: number,
-    category: 'global' | 'rock' | 'archange' | 'app',
+    category: string,
     message: string
 }

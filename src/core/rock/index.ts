@@ -48,7 +48,8 @@ export class MongoBase {
             this.adlogs.writeRuntimeEvent({
                 type: 'stop',
                 category: 'rock',
-                message: `mongodb server starting error : ${err}`
+                message: `mongodb server starting error : ${err}`,
+                save: true
             })
         }
     }

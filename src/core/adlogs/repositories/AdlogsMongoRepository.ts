@@ -7,7 +7,7 @@ import Utils from "#utils/index.js"
  * ---
  * MongoDB
  * --
- * Anywhere
+ * k-engine
  */
 
 
@@ -29,14 +29,13 @@ class Repository extends IAdlogsRepository{
         })
     }
 
-    addNewLogItem = async (item: AdlogSavedItem): Promise<{ state: boolean; err: string }> => {
+    save = async (item: AdlogSavedItem): Promise<{ state: boolean; err: string }> => {
         try {
             await this.adlogsCollection.insertOne(item)
             return { state: true, err: '' }
         } catch (error) {
             return { state: false, err: error instanceof MongoServerError && error.message || '' }
         }
-
     }
 
 }

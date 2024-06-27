@@ -67,17 +67,18 @@ if(undefinedRequiredEnvProperty) errorMessage = `the propert${requireEnvProperti
  * ---
  * Anywhere
  */
-export default {
+const Config = {
     error: errorMessage,
     root: path.join(__dirname, '..'),
     infrastructure: {
         web: {
+            routes_directory: '/app/controllers/routes',
             interface: interfaceToListen,
             port: getParsedProperty('KE_HTTP_PORT'),
             secured: Boolean(getParsedProperty('KE_HTTP_SECURE')),
-            sessin: {
-                secret: getParsedProperty('KE_HTTP_SESSION_SECRET'),
-                cookie_max_day: getParsedProperty('KE_HTTP_SESSION_MAXDAY')
+            session: {
+                secret: getParsedProperty('KE_HTTP_SESSION_SECRET').toString(),
+                cookie_max_day: parseInt(getParsedProperty('KE_HTTP_SESSION_MAXDAY').toString(), 10)
             }
         },
         database: {
@@ -89,6 +90,9 @@ export default {
         }
     }
 }
+
+export default Config
+export type ConfigType = typeof Config
 
 // -> Inbuilt function
 
@@ -116,10 +120,9 @@ function getServerExternalInterface () {
 
 /** Retrieve good property value from envKEProperties */
 function getParsedProperty (name: string) {
-    const numberItem = ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_HTTP_SECURE', 'KE_DATABASE_MONGO_PORT']
     const item = envKEProperties.filter(x => x.name === name)[0]
     if(!item) return ''
 
     const value = item.value || ''
-    return numberItem.includes(item.name) ? parseInt(value, 10) : value
+    return value
 }
