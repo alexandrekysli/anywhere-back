@@ -17,7 +17,7 @@ let requireEnvProperties = [
     'KE_DATABASE_MONGO_USER',
     'KE_DATABASE_MONGO_PASSWORD'
 ]
-let interfaceToListen: NetworkInterfaces | false = false
+let interfaceToListen: NetworkInterfaces | undefined
 const envKEPropertiesName = Object.getOwnPropertyNames(process.env).filter(x => x.includes('KE_'))
 const envKEProperties = envKEPropertiesName.map(x => { return { name: x, value: process.env[x] } })
 const externalNetworkInterfaceList = getServerExternalInterface()
@@ -74,7 +74,7 @@ const Config = {
         web: {
             routes_directory: '/app/controllers/routes',
             interface: interfaceToListen,
-            port: getParsedProperty('KE_HTTP_PORT'),
+            port: parseInt(getParsedProperty('KE_HTTP_PORT'), 10),
             secured: Boolean(getParsedProperty('KE_HTTP_SECURE')),
             session: {
                 secret: getParsedProperty('KE_HTTP_SESSION_SECRET').toString(),

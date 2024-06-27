@@ -16,6 +16,7 @@ import AdlogsMongoRepository from "./core/adlogs/repositories/AdlogsMongoReposit
 
 /* ### -> App initialisation ### */
 const adlogs = new Adlogs()
+const heaven = new Heaven(adlogs, engineConfig)
 const mongoBase = new MongoBase(adlogs, engineConfig.infrastructure.database.mongo)
 
 adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting' })
@@ -29,11 +30,24 @@ if(engineConfig.error){
         message: `bad configuration - ${engineConfig.error} -`, save: true 
     })
 } else {
-    // -> Good configuration -> next step when db is OK
+    // ### -> App configuration good -> next step ...
 
+    // -> Initialize heaven web server when session store has start
     adlogs.listenRuntimeEventMessage('mongodb server has correctly start', () => {
-        // -> Starting Heaven web server
-        const heaven = new Heaven(adlogs, engineConfig, mongoBase,'express')
+        heaven.init('express', mongoBase)
+    }, true)
+
+    // -> Run heaven when is ready
+    adlogs.listenRuntimeEventMessage('web server configuration complete', () => {
+        const succesRunMessage = heaven.run()
+        adlogs.listenRuntimeEventMessage(succesRunMessage, () => {
+            adlogs.writeRuntimeEvent({
+                category: 'global',
+                type: 'ready',
+                message: `k-engine has start`,
+                save: false 
+            })
+        }, true)
     }, true)
 }
 

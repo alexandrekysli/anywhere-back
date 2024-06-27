@@ -12,6 +12,16 @@ import { Express, Router } from "express"
 /** Types */
 type dynamicRouteFolderItem = { path: string, router: string }
 
+// -> TS > express-session mistake resolved
+declare module 'express-session' {
+    interface SessionData {
+        heaven_know_footprint: string,
+        archange_user: { footprint: string, expire: number }
+    }
+}
+
+
+
 /**
  * # Heaven
  * Web Server
@@ -22,16 +32,12 @@ type dynamicRouteFolderItem = { path: string, router: string }
 class Heaven {
     private webServer: Express | undefined
     private webLink: http.Server | undefined
+    private serverType: 'express' | undefined
 
     constructor(
         private adlogs: Adlogs,
-        private engineConfig: ConfigType,
-        mongoBase: MongoBase,
-        private serverType: 'express'
-    ){
-        // -> Build web server
-        this.buildWebServer(mongoBase)
-    }
+        private engineConfig: ConfigType
+    ){}
 
     /**
      * ###
@@ -45,7 +51,9 @@ class Heaven {
     private buildWebServer = async (mongoBase: MongoBase) => {
         if(this.serverType === 'express'){
             // -> build express web server
-            this.webServer = ExpressServerBuildler(this.engineConfig['infrastructure']['web'], mongoBase).webServer
+            const expressServer = ExpressServerBuildler(this.engineConfig['infrastructure']['web'], mongoBase)
+            this.webServer = expressServer.webServer
+            this.webLink = expressServer.webLink
 
             // -> link archange middleware
 
@@ -57,10 +65,10 @@ class Heaven {
                 ), '', routeFolderStructure
             )
             if(routeFolderStructure.length){
-                routeFolderStructure.forEach(async route => {
+                for (const route of routeFolderStructure) {
                     // -> Check if file as a valid express router
                     const router = (await import(route.router)).default.default
-                    if(router instanceof Function){                        
+                    if(router instanceof Function){
                         try {
                             this.webServer?.use(route.path, router(this.adlogs))
                         } catch (error) {
@@ -73,7 +81,7 @@ class Heaven {
                             })
                         }
                     }
-                })
+                }
             }else{
                 // -> No available route
                 this.adlogs.writeRuntimeEvent({
@@ -83,10 +91,10 @@ class Heaven {
                 })
             }
 
-            // -> 404 Route
+            // -> 404 Route catching
             this.webServer.use((req, res) => {
                 res.status(404)
-                res.send(`The desired path < ${req.originalUrl} > not existed in this server !`)
+                res.send(`The desired path < ${req.originalUrl} > not existed on this server !`)
 
                 this.adlogs.writeRuntimeEvent({
                     category: 'heaven',
@@ -94,12 +102,18 @@ class Heaven {
                     message: `caller attempt to access unavaialble route < ${req.originalUrl} >`
                 })
             })
+
+            // -> Express configuration finish -> heaven is ready
+            this.adlogs.writeRuntimeEvent({
+                category: 'heaven',
+                type: 'info',
+                message: 'web server configuration complete'
+            })
         }
     }
 
     /**
      * Retrieve web server route structure by scanning specified `routeFolder`
-     * @param routeFolder folder where begin scan
      */
     private getRouteFolderStructure = (routeFolder: string, originPath: string, out: dynamicRouteFolderItem[]) => {
         const raw = Utils.getFolderContentSync(routeFolder, 0, true, true)
@@ -129,8 +143,44 @@ class Heaven {
      */
 
     /**
-     * 
+     * Initialize Heaven with specified web server
+     * @param serverType heaven server type 
+     * @param mongoBase store for session
      */
+    public init = (serverType: 'express', mongoBase: MongoBase ) => {
+        // -> Build web server
+        this.serverType = serverType
+        this.buildWebServer(mongoBase)
+    }
+
+    public run = () => {
+        const interfaceAddress = this.engineConfig.infrastructure.web.interface && this.engineConfig.infrastructure.web.interface.address || undefined
+        const succesRunMessage = `heaven web server has correctly start at < ${interfaceAddress || ''}:${this.engineConfig.infrastructure.web.port} >`
+        const httpServer = this.webLink?.listen(
+            this.engineConfig.infrastructure.web.port,
+            interfaceAddress,
+            undefined,
+            () => {
+                this.adlogs.writeRuntimeEvent({
+                    category: 'heaven',
+                    type: 'info',
+                    message: succesRunMessage
+                })
+            }
+        )
+
+        httpServer?.on('error', (error) => {
+            // -> Bad express router file
+            this.adlogs.writeRuntimeEvent({
+                category: 'heaven',
+                type: 'stop',
+                message: `enabled to run heaven web server because < ${error.message} >`,
+                save: true
+            })
+        })
+
+        return succesRunMessage
+    }
 }
 
 export default Heaven
