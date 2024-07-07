@@ -7,20 +7,10 @@ import { MongoBase } from "../rock"
 import Utils from "#utils/index.js"
 import ExpressServerBuildler from "./web-server-builder/express"
 
-import { Express, Router } from "express"
+import { Express } from "express"
 
 /** Types */
 type dynamicRouteFolderItem = { path: string, router: string }
-
-// -> TS > express-session mistake resolved
-declare module 'express-session' {
-    interface SessionData {
-        heaven_know_footprint: string,
-        archange_user: { footprint: string, expire: number }
-    }
-}
-
-
 
 /**
  * # Heaven
@@ -48,10 +38,15 @@ class Heaven {
     /**
      * Builds a node web server for Heaven instance 
      */
-    private buildWebServer = async (mongoBase: MongoBase) => {
+    private buildWebServer = async (mongoBase: MongoBase, archangeRequestMiddleware: Function) => {
         if(this.serverType === 'express'){
             // -> build express web server
-            const expressServer = ExpressServerBuildler(this.engineConfig['infrastructure']['web'], mongoBase)
+            const expressServer = ExpressServerBuildler(
+                this.adlogs,
+                this.engineConfig,
+                mongoBase,
+                archangeRequestMiddleware
+            )
             this.webServer = expressServer.webServer
             this.webLink = expressServer.webLink
 
@@ -99,7 +94,7 @@ class Heaven {
                 this.adlogs.writeRuntimeEvent({
                     category: 'heaven',
                     type: 'info',
-                    message: `caller attempt to access unavaialble route < ${req.originalUrl} >`
+                    message: `caller attempt to access unavailable route < ${req.originalUrl} >`
                 })
             })
 
@@ -147,10 +142,10 @@ class Heaven {
      * @param serverType heaven server type 
      * @param mongoBase store for session
      */
-    public init = (serverType: 'express', mongoBase: MongoBase ) => {
+    public init = (serverType: 'express', mongoBase: MongoBase, archangeRequestMiddleware: Function ) => {
         // -> Build web server
         this.serverType = serverType
-        this.buildWebServer(mongoBase)
+        this.buildWebServer(mongoBase, archangeRequestMiddleware)
     }
 
     public run = () => {
@@ -169,12 +164,11 @@ class Heaven {
             }
         )
 
-        httpServer?.on('error', (error) => {
-            // -> Bad express router file
+        httpServer?.on('error', (err) => {
             this.adlogs.writeRuntimeEvent({
                 category: 'heaven',
                 type: 'stop',
-                message: `enabled to run heaven web server because < ${error.message} >`,
+                message: `enabled to run heaven web server because < ${err.message} >`,
                 save: true
             })
         })

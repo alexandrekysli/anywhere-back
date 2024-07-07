@@ -15,7 +15,7 @@ export default (adlogs: Adlogs) => {
     /** ### Router dispatching ### */
     router.get('/', async(req, res) => {
         res.json({
-            ip: req.socket.remoteAddress
+            ip: (req.socket.remoteAddress || '').replace(/([a-z]|:)+/, '')
         })
     })
 

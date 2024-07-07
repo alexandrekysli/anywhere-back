@@ -1,7 +1,5 @@
 /** ### Applications common types ### */
 
-/** ## Repositories ## */
-
 /** Adlogs */
 type AdlogSavedItem = {
     id?: string,

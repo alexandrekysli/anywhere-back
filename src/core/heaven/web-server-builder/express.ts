@@ -1,13 +1,24 @@
 import http from "node:http"
 
+import Adlogs from "#core/adlogs/index.js"
 import { ConfigType } from "../../../config"
 import { MongoBase } from "../../rock"
 
-import ExpressApp, { Express } from "express"
+import ExpressApp from "express"
 import ExpressSession from "express-session"
+import ServeFavicon from "serve-favicon"
 import Helmet from "helmet"
 import MongoStore from "connect-mongo"
 
+
+/** TS */
+// -> express-session mistake resolved
+declare module 'express-session' {
+    interface SessionData {
+        heaven_kf: string,
+        archange_hash: { footprint: string, expire: number }
+    }
+}
 
 /**
  * # Express Web Server Buildler
@@ -16,29 +27,46 @@ import MongoStore from "connect-mongo"
  * k-engine
  */
 
-const expressServer = (webServerConfig: ConfigType['infrastructure']['web'], mongoBase: MongoBase) => {
+const expressServer = (adlogs: Adlogs, engineConfig: ConfigType, mongoBase: MongoBase, archangeRequestMiddleware: any) => {
     const webServer = ExpressApp()
     const webLink = http.createServer(webServer)
 
     webServer.use(ExpressApp.urlencoded({ extended: true }))
     webServer.use(ExpressApp.json())
     webServer.disable('x-powered-by')
-    webServerConfig.secured && webServer.use(Helmet())
+    engineConfig.infrastructure.web.secured && webServer.use(Helmet())
 
+    // -> Favicon serving
+    try {
+        webServer.use(ServeFavicon(engineConfig.root + '/public/favicon.ico'))        
+    } catch (err) {
+        if(err instanceof Error){
+            adlogs.writeRuntimeEvent({
+                category: 'heaven',
+                type: 'stop',
+                message: `unabled to load favicon file < ${err.message} >`,
+                save: true
+            })
+        }
+    }
+    
     // -> Express Session Configuration
     webServer.use(ExpressSession({
-        secret: webServerConfig.session.secret,
+        secret: engineConfig.infrastructure.web.session.secret,
         resave: true,
         saveUninitialized: true,
         cookie: {
-            secure: webServerConfig.secured,
-            maxAge: webServerConfig.session.cookie_max_day
+            secure: engineConfig.infrastructure.web.secured,
+            maxAge: engineConfig.infrastructure.web.session.cookie_max_day
         },
         store: MongoStore.create({
             client: mongoBase.client,
-            dbName: 'k-engine-session'
+            dbName: 'anywhere'
         })
     }))
+
+    // -> Archange request middleware
+    webServer.use(archangeRequestMiddleware)
 
     return { webServer, webLink }
 

@@ -78,14 +78,37 @@ const Config = {
             secured: Boolean(getParsedProperty('KE_HTTP_SECURE')),
             session: {
                 secret: getParsedProperty('KE_HTTP_SESSION_SECRET').toString(),
-                cookie_max_day: parseInt(getParsedProperty('KE_HTTP_SESSION_MAXDAY').toString(), 10)
+                cookie_max_day: parseInt(getParsedProperty('KE_HTTP_SESSION_MAXDAY').toString(), 10) * 86400000
             }
         },
         database: {
             mongo: {
                 host: getParsedProperty('KE_DATABASE_MONGO_HOST') + ':' + getParsedProperty('KE_DATABASE_MONGO_PORT'),
                 user: getParsedProperty('KE_DATABASE_MONGO_USER'),
-                password: encodeURIComponent(getParsedProperty('KE_DATABASE_MONGO_PASSWORD'))
+                password: encodeURIComponent(getParsedProperty('KE_DATABASE_MONGO_PASSWORD')),
+                db: 'anywhere'
+            }
+        },
+        archange: {
+            bucket: {
+                limit: {
+                    ip: 10,
+                    known: 15,
+                    user: 30
+                },
+                frame_lifetime: 30
+            },
+            caller: {
+                max: {
+                    ip: 10,
+                    known: 1,
+                    user: 5
+                }
+            },
+            hell: {
+                max_dos_per_hour: 5,
+                delayed_time: 5 * 60 * 1000,
+                dos_ban_time: 1 * 3600 * 1000
             }
         }
     }
