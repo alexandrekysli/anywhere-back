@@ -22,7 +22,7 @@ class ArchangeCaller {
     public caller: CallerEntity | null = null
     public hellItem: HellItemEntity | null = null
     private requestCount = 0
-    private tokenBucket = 0
+    public tokenBucket = 0
     private timestampBucket = 0
     private dosPerHourBegin = 0
     private dosPerHourCount = 0
@@ -128,6 +128,9 @@ class ArchangeCaller {
         return -1
     }
 
+    /**
+     * @param originIndex specified index of desired caller origin
+     */
     checkOriginRequest = async (originIndex: number) => {
         if(this.caller){
             let hellParameters: { mode: HellItemEntity['mode'], time: number, switch?: boolean } | null = null
@@ -147,7 +150,6 @@ class ArchangeCaller {
                     // -> HELL CHECKER
                     if(this.hellItem){
                         // -> caller already in hell with DELAYED mode
-                        console.log('caller already in hell 👿', this.hellItem)
                         // -> detect if caller dosPerHour limit reach
                         if(this.dosPerHourBegin === new Date(nowDate).getHours() && this.dosPerHourCount >= this.archangeConfig.hell.max_dos_per_hour){
                             // -> dosPerHour Limit reach -> put in hell with BAN mode
@@ -217,7 +219,6 @@ class ArchangeCaller {
             }
             // -> Wait 10s before save origin last_activity
             originLastActivitySavingTimeout.timeout = setTimeout(() => {
-                console.log('origin last_activity save !');
                 this.originRepository.updateOriginActivity(origin.id || '', origin.lastActivity).then((result) => {
                     if(result.err){
                         this.adlogs.writeRuntimeEvent({
@@ -232,6 +233,7 @@ class ArchangeCaller {
         }
     }
 
+    /** Remove caller from Archange Hell */
     exitCallerFromHell = async () => {
         if(this.caller && this.hellItem){
             // -> Hell stay finish -> remove item from hell

@@ -15,7 +15,11 @@ let requireEnvProperties = [
     'KE_DATABASE_MONGO_HOST',
     'KE_DATABASE_MONGO_PORT',
     'KE_DATABASE_MONGO_USER',
-    'KE_DATABASE_MONGO_PASSWORD'
+    'KE_DATABASE_MONGO_PASSWORD',
+    'KE_EMAIL_HOST',
+    'KE_EMAIL_PORT',
+    'KE_EMAIL_USER',
+    'KE_EMAIL_PASSWORD'
 ]
 let interfaceToListen: NetworkInterfaces | undefined
 const envKEPropertiesName = Object.getOwnPropertyNames(process.env).filter(x => x.includes('KE_'))
@@ -36,7 +40,7 @@ for (const property of envKEProperties) {
         requireEnvProperties = [property.name]
         break
     }else if(
-        ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_DATABASE_MONGO_PORT'].includes(property.name) &&
+        ['KE_HTTP_PORT', 'KE_HTTP_SESSION_MAXDAY', 'KE_DATABASE_MONGO_PORT', 'KE_EMAIL_PORT'].includes(property.name) &&
         isNaN(Number(property.value))
     ){
         // -> Detect if env numeric property incorrectly set        
@@ -96,7 +100,7 @@ const Config = {
                     known: 15,
                     user: 30
                 },
-                frame_lifetime: 30
+                frame_lifetime: 10
             },
             caller: {
                 max: {
@@ -109,6 +113,15 @@ const Config = {
                 max_dos_per_hour: 5,
                 delayed_time: 5 * 60 * 1000,
                 dos_ban_time: 1 * 3600 * 1000
+            }
+        },
+        email: {
+            host: getParsedProperty('KE_EMAIL_HOST'),
+            port: parseInt(getParsedProperty('KE_EMAIL_PORT'), 10),
+            secure: true,
+            auth: {
+                user: getParsedProperty('KE_EMAIL_USER'),
+                pass: getParsedProperty('KE_EMAIL_PASSWORD')
             }
         }
     }

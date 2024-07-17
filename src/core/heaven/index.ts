@@ -8,6 +8,7 @@ import Utils from "#utils/index.js"
 import ExpressServerBuildler from "./web-server-builder/express"
 
 import { Express } from "express"
+import Archange from "../archange"
 
 /** Types */
 type dynamicRouteFolderItem = { path: string, router: string }
@@ -38,14 +39,14 @@ class Heaven {
     /**
      * Builds a node web server for Heaven instance 
      */
-    private buildWebServer = async (mongoBase: MongoBase, archangeRequestMiddleware: Function) => {
+    private buildWebServer = async (mongoBase: MongoBase, archange: Archange) => {
         if(this.serverType === 'express'){
             // -> build express web server
             const expressServer = ExpressServerBuildler(
                 this.adlogs,
                 this.engineConfig,
                 mongoBase,
-                archangeRequestMiddleware
+                archange.expressMiddleware
             )
             this.webServer = expressServer.webServer
             this.webLink = expressServer.webLink
@@ -65,7 +66,7 @@ class Heaven {
                     const router = (await import(route.router)).default.default
                     if(router instanceof Function){
                         try {
-                            this.webServer?.use(route.path, router(this.adlogs))
+                            this.webServer?.use(route.path, router(this.adlogs, archange, mongoBase.client))
                         } catch (error) {
                             // -> Bad express router file
                             this.adlogs.writeRuntimeEvent({
@@ -142,10 +143,10 @@ class Heaven {
      * @param serverType heaven server type 
      * @param mongoBase store for session
      */
-    public init = (serverType: 'express', mongoBase: MongoBase, archangeRequestMiddleware: Function ) => {
+    public init = (serverType: 'express', mongoBase: MongoBase, archange: Archange ) => {
         // -> Build web server
         this.serverType = serverType
-        this.buildWebServer(mongoBase, archangeRequestMiddleware)
+        this.buildWebServer(mongoBase, archange)
     }
 
     public run = () => {

@@ -1,11 +1,12 @@
 /* ### Load Node modules ### */
+import { Response } from 'express'
 import fs, { Dirent } from 'fs'
 import Crypto from "node:crypto"
 
 /** Types */
 type FolderElement = { name: string, type: 'folder' | 'file' | undefined }
 type FolderContent = { folder: Array<FolderElement>, file: Array<FolderElement> }
-type SchemaValidationField = { name: string, type: string, required: boolean }
+type SchemaValidationField = { name: string, type: string, required: boolean, data?: {[key: string]: any | {}} }
 type MongoSchemaValidation = {
     $jsonSchema: {
         bsonType: 'object',
@@ -21,7 +22,7 @@ type MongoSchemaValidation = {
  * k-engine
  */
 
-export default class {
+class Utils {
     /**
      * Make random number from interval
      * @param min Minimal value
@@ -125,6 +126,14 @@ export default class {
     }
 
     /**
+     * Return a SHA256 hash from specified value
+     * @param value text value to hash
+     */
+    static makeSHA256 = (value: string) => {
+        return Crypto.createHash('sha256').update(value).digest("hex")
+    }
+
+    /**
      * Return mongoDB validation schema
      * @param collectionName name of collection (if existing)
      * @param fields database schema to use for collection validation
@@ -141,12 +150,30 @@ export default class {
 
         for (const field of fields) {
             field.required && schema.$jsonSchema.required.push(field.name)
-            schema.$jsonSchema.properties[field.name] = {
-                bsonType: field.type,
-                description: `${field.name} is required and must be a ${field.type}`
+            if(field.data){
+                schema.$jsonSchema.properties[field.name] = field.data
+            }else{
+                schema.$jsonSchema.properties[field.name] = {
+                    bsonType: field.type,
+                    description: `${field.name} is required and must be a ${field.type}`
+                }
             }
         }
 
         return schema
     }
+
+    static makeHeavenResponse = (res: Response, data: any, archangeError?: string) => {
+        return {
+            archange: {
+                pass: true,
+                token_bucket: res.locals.archange_check.pass ? res.locals.archange_check.caller.remain_token : -1,
+                hell: res.locals.archange_check.hell && { type: res.locals.archange_check.hell.mode, to: res.locals.archange_check.hell.to },
+                err: archangeError
+            },
+            data: data
+        }
+    }
 }
+
+export default Utils

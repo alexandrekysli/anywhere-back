@@ -10,6 +10,8 @@ import uap from "ua-parser-js"
 import HellRepository from "./repositories/IHellRepository"
 import CallerRepository from "./repositories/ICallerRepository"
 import OriginRepository from "./repositories/IOriginRepository"
+import IArchangeUserRepository from "./repositories/IUserRepository"
+import MongoArchangeUserRepository from "./repositories/IUserRepository"
 
 /** TS */
 type RequestOrigin = {
@@ -24,6 +26,7 @@ type RequestOrigin = {
 }
 type ArchangeRequestCheckResult = {
     pass: boolean,
+    caller?: { value: string, remain_token: number },
     hell: {
         mode: 'ban' | 'delayed',
         to: number
@@ -45,6 +48,7 @@ class Archange {
         private callerRepository: CallerRepository,
         private originRepository: OriginRepository,
         private hellRepository: HellRepository,
+        private userRepository: IArchangeUserRepository
     ){}
 
     /**
@@ -60,7 +64,7 @@ class Archange {
     private getExpressRequestOrigin = (req: Request) : RequestOrigin => {
         const ip = (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'][0] || req.socket.remoteAddress || 'socket-lost').replace(/([a-z]|:)+/, '')
         const heavenKnowFootprint = req.session.heaven_kf
-        const archangeUserHash = req.session.archange_hash?.footprint
+        const archangeUserHash = req.session.archange_hash
         const ua = uap(req.headers['user-agent'])
         const callerValue = archangeUserHash || heavenKnowFootprint || Utils.makeMD5(ip)
         
@@ -125,7 +129,7 @@ class Archange {
                             type: 'warning',
                             message: `cookie usurpation detect with new origin for caller < ${activeCaller.caller.identifier} >`
                         })
-                        return { pass: true, hell: null }
+                        return { pass: false, hell: null }
                     }else{
                         // -> New origin for ip and user caller
                         originIndex = await activeCaller.addNewOrigin(origin.ip, origin.hash, origin.agent)
@@ -146,7 +150,7 @@ class Archange {
                     pass: false,
                     hell: { mode: activeCaller.hellItem.mode, to: activeCaller.hellItem.to }
                 }
-            }else return { pass: true, hell: null }
+            }else return { pass: true, hell: null, caller: { value: activeCaller.caller.identifier, remain_token: activeCaller.tokenBucket } }
         }
         return { pass: true, hell: null }
     }
@@ -165,24 +169,61 @@ class Archange {
         if(origin.type === 'ip') req.session.heaven_kf = randomUUID()
         
         const result = await this.archangeRequestAnalyser(origin)
-
+        res.locals.archange_check = result
         if(result.hell){
             if(result.hell.mode === 'delayed'){
                 setTimeout(() => {
-                    res.status(429)
                     next()
                 }, Utils.getRandomNumber(3000, 10000));
             }else{
-                res.status(403)
                 res.json({
                     archange: {
-                        state: false,
-                        err: 'Too many request',
-                        hell: { mode: 'BAN', until: result.hell.to, prettyUntil: new Date(result.hell.to).toISOString() }
+                        pass: false,
+                        token_bucket: 0,
+                        hell: { type: 'ban', to: result.hell.to }
                     }
                 })
             }
-        }else next()
+        }else if(!result.pass){
+            res.status(404)
+            res.json({
+                archange: {
+                    pass: false,
+                    token_bucket: 0,
+                    hell: { type: 'ban', to: 'forever' }
+                }
+            })
+        }else{
+            next()
+        }
+    }
+
+    public getArchangeUserByMasterID = async (master_id: string, group: string) => {
+        const user = await this.userRepository.getUserByLinkHash(Utils.makeSHA256(`4C#${master_id}@`), group)        
+        if(user.data !== undefined){
+            return user.data || null
+        }else{
+            this.adlogs.writeRuntimeEvent({
+                category: 'archange',
+                type: 'stop',
+                message: `critical db error < ${user.err} >`, save: true
+            })
+            return null
+        }
+    }
+
+    public addArchangeUser = async (master_id: string, group: string) => {
+        const user = await this.userRepository.addUser(Utils.makeSHA256(`4C#${master_id}@`), group)
+        if(user.data !== undefined){
+            return user.data || null
+        }else{
+            this.adlogs.writeRuntimeEvent({
+                category: 'archange',
+                type: 'stop',
+                message: `critical db error < ${user.err} >`, save: true
+            })
+            return null
+        }
     }
 }
 

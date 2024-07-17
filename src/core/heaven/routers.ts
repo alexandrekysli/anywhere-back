@@ -1,17 +1,21 @@
 import Adlogs from "#core/adlogs/index.js"
+import ExpressApp, { Request } from "express"
+import Archange from "../archange"
+import { MongoClient } from "mongodb"
 
-import ExpressApp from "express"
+/** TS */
+interface ExpressFractalRequest extends Request {}
 
 /**
  * # Heaven Express Router
  * Heaven
  * ---
- * k-engine
+ * k-engine 
  */
 
 class HeavenExpressRouter{
     public router = ExpressApp.Router()
-    constructor( public adlogs: Adlogs ){}
+    constructor( public adlogs: Adlogs, public archange: Archange, public mongoClient: MongoClient ){}
 }
 
-export { HeavenExpressRouter }
+export { HeavenExpressRouter, ExpressFractalRequest }

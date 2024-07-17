@@ -6,6 +6,7 @@ import { MongoBase } from "../../rock"
 
 import ExpressApp from "express"
 import ExpressSession from "express-session"
+import Cors from "cors"
 import ServeFavicon from "serve-favicon"
 import Helmet from "helmet"
 import MongoStore from "connect-mongo"
@@ -16,7 +17,7 @@ import MongoStore from "connect-mongo"
 declare module 'express-session' {
     interface SessionData {
         heaven_kf: string,
-        archange_hash: { footprint: string, expire: number }
+        archange_hash: string
     }
 }
 
@@ -35,6 +36,7 @@ const expressServer = (adlogs: Adlogs, engineConfig: ConfigType, mongoBase: Mong
     webServer.use(ExpressApp.json())
     webServer.disable('x-powered-by')
     engineConfig.infrastructure.web.secured && webServer.use(Helmet())
+    webServer.use(Cors({ credentials: true, origin: ['http://192.168.0.26:5173'] }))
 
     // -> Favicon serving
     try {

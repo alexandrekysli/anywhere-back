@@ -1,8 +1,6 @@
-import Utils from "#utils/index.js"
 import IOriginRepository from "./IOriginRepository"
-import CallerEntity from "../entities/caller"
 
-import { MongoClient, MongoError, MongoServerError, ObjectId } from "mongodb"
+import { MongoClient, MongoError, ObjectId } from "mongodb"
 import OriginEntity from "../entities/origin"
 
 interface OriginCollection {

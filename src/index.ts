@@ -18,6 +18,7 @@ import MongoAdlogsRepository from "./core/adlogs/repositories/MongoAdlogsReposit
 import MongoHellRepository from "./core/archange/repositories/MongoHellRepository"
 import MongoCallerRepository from "./core/archange/repositories/MongoCallerRepository"
 import MongoOriginRepository from "./core/archange/repositories/MongoOriginRepository"
+import MongoArchangeUserRepository from "./core/archange/repositories/MongoUserRepository"
 
 
 /* ### -> App initialisation ### */
@@ -29,7 +30,8 @@ const archange = new Archange(
     engineConfig.infrastructure.archange,
     new MongoCallerRepository(mongoBase.client, 'anywhere'),
     new MongoOriginRepository(mongoBase.client, 'anywhere'),
-    new MongoHellRepository(mongoBase.client, 'anywhere')
+    new MongoHellRepository(mongoBase.client, 'anywhere'),
+    new MongoArchangeUserRepository(mongoBase.client, 'anywhere')
 )
 
 adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting' })
@@ -47,7 +49,7 @@ if(engineConfig.error){
 
     // -> Initialize heaven web server when session store has start
     adlogs.listenRuntimeEventMessage('mongodb server has correctly start', () => {
-        heaven.init('express', mongoBase, archange.expressMiddleware)
+        heaven.init('express', mongoBase, archange)
     }, true)
 
     // -> Run heaven when is ready
@@ -63,4 +65,3 @@ if(engineConfig.error){
         }, true)
     }, true)
 }
-
