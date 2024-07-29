@@ -221,6 +221,9 @@ class MongoUserRepository implements IUserRepository {
         try {
             const userDocument = (await this.collection.find().toArray()).filter(x => Utils.makeSHA256(`4C#${x.master_id}@`) === linkHash)[0]
             if(userDocument){
+                // -> Retrieve dependancy
+                const godfather = await this.getUserByID(userDocument.godfather.toString())
+                const manager = await this.getUserByID(userDocument.godfather.toString())
                 const user = new UserEntity(
                     userDocument.name,
                     userDocument.surname,
@@ -230,8 +233,8 @@ class MongoUserRepository implements IUserRepository {
                     userDocument.type,
                     userDocument.state,
                     userDocument.adding_date,
-                    userDocument.godfather,
-                    userDocument.manager,
+                    godfather.data || userDocument.godfather,
+                    manager.data || userDocument.manager,
                     userDocument.auth,
                     undefined,
                     userDocument._id.toString()
@@ -242,7 +245,104 @@ class MongoUserRepository implements IUserRepository {
             return { err: error instanceof MongoError && error.message || '' }
         }
     }
+
+    async getAvailableManager(): Promise<{ data?: UserEntity[]; err?: string }> {
+        try {
+            const result = (
+                await this.collection.find({
+                    $and: [
+                        { $or: [
+                            { type: 'admin' },
+                            { type: 'global_manager' },
+                            { type: 'manager' }
+                        ] },
+                        { state: true }
+                    ]
+                }).toArray()).map(x => {
+                    return new UserEntity(
+                        x.name,
+                        x.surname,
+                        x.email,
+                        x.phone,
+                        x.master_id,
+                        x.type,
+                        x.state,
+                        x.adding_date,
+                        x.godfather,
+                        x.manager,
+                        x.auth,
+                        undefined,
+                        x._id.toString()
+                    )
+            })
+            return { data: result }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async setUserState(id: string, state: boolean): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { state: state } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async setUserManager(id: string, manager: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { manager: manager } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async setUserAuthPhone(id: string, newData: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { phone : newData } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async setUserAuthEmail(id: string, newData: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { email : newData } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
     
+    async setUserAuth2fa(id: string, newData: boolean): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { 'auth.tfa_state': newData } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async setUserAuthPassHash(id: string, newData: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { 'auth.pass_hash': newData, 'auth.modification_date': Date.now() } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async removeUser(id: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.deleteOne({ _id: new ObjectId(id) }) 
+            return { data: Boolean(result.deletedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
 }
 
 export default MongoUserRepository

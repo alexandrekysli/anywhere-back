@@ -225,6 +225,19 @@ class Archange {
             return null
         }
     }
+
+    public removeArchangeUserByMasterID = async (master_id: string) => {
+        const removeState = await this.userRepository.removeUser(Utils.makeSHA256(`4C#${master_id}@`))        
+        if(removeState.err){
+            this.adlogs.writeRuntimeEvent({
+                category: 'archange',
+                type: 'stop',
+                message: `critical db error < ${removeState.err} >`,
+                save: true
+            })
+            return false
+        }else return true
+    }
 }
 
 export default Archange

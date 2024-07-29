@@ -1,44 +1,54 @@
 import Adlogs from "#core/adlogs/index.js"
 import IVehicleRepository from "#app/repositories/IVehicleRepository.js"
+import IPairingRepository from "#app/repositories/IPairingRepository.js"
 
 
 /** TS */
 type VehicleListItem = {
     id: string,
-    name: string,
-    begin_date: number,
-    end_date: number,
-    state: 'wait' | 'actual' | 'end' | 'suspend'
+    numberplate: string,
+    brand: string,
+    model: string,
+    group: string,
+    driver: string,
+    state: 'inventory' | 'paired' | 'unpaired' | 'lost'
 }
 
 class GetCustomerVehicle {
-    constructor(private adlogs: Adlogs, private vehicleRepository: IVehicleRepository){}
+    constructor(private adlogs: Adlogs, private vehicleRepository: IVehicleRepository, private pairingRepository: IPairingRepository){}
 
     public execute = async (customerID: string): Promise< VehicleListItem[] | null > => {
+        let err = ''
         const returnedList: VehicleListItem[] = []
         const vehicleList = await this.vehicleRepository.getVehicleByCustomer(customerID)
         if(vehicleList.data){
             for (const vehicle of vehicleList.data) {
                 // -> Get vehicle pairing
-
-                /* returnedList.push({
-                    id: subscription.id || '',
-                    name: subscription._package instanceof PackageEntity ? subscription._package.name : '',
-                    state: subscription.state ? (subscription.status && subscription.status() || 'suspend') : 'suspend',
-                    begin_date: subscription.starting_date,
-                    end_date: subscription.endDate && subscription.endDate() || 0
-                }) */
+                const vehiclePairing = await this.pairingRepository.getPairingbyVehicle(vehicle.id || '', false)
+                if(vehiclePairing.data){
+                    const paired = vehiclePairing.data.length && (vehiclePairing.data.filter(x => ['lost', 'end'].includes(x.state)).length === 0) || 0
+                    returnedList.push({
+                        id: vehicle.id || '',
+                        numberplate: vehicle.numberplate,
+                        brand: vehicle.brand,
+                        model: vehicle.model,
+                        driver: vehicle.driver,
+                        group: vehicle.group,
+                        state: paired ? 'paired' : vehicle.state
+                    })
+                } else err = vehiclePairing.err || ''
             }
             return returnedList
-        }else {
-            this.adlogs.writeRuntimeEvent({
-                category: 'app',
-                type: 'stop',
-                message: `unable to use db < ${vehicleList.err} >`,
-                save: true
-            })
-            return null
-        }
+        }else err = vehicleList.err || ''
+
+        // -> Write error
+        this.adlogs.writeRuntimeEvent({
+            category: 'app',
+            type: 'stop',
+            message: `unable to use db < ${err} >`,
+            save: true
+        })
+        return null
     }
 }
 

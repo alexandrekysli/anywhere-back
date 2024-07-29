@@ -7,8 +7,8 @@ type SendMailData = {
     }
 }
 
-interface IEMailProvider {
+interface IEmailProvider {
     sendMail(data: SendMailData): Promise<{ state?: boolean, err?: string }>
 }
 
-export default IEMailProvider
+export default IEmailProvider

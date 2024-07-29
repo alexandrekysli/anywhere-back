@@ -11,19 +11,14 @@ class MongoTrackerRepository implements ITrackerRepository {
         db.listCollections().toArray().then(async info => {
             const collIndex = info.findIndex(x => x.name === 'tracker')
             if(collIndex === -1) await db.createCollection('tracker')
-            
             db.command({
-                "collMod": "pairing-event", 
+                "collMod": "tracker", 
                 "validator": Utils.makeMongoSchemaValidation([
                     { name: 'brand', type: 'string', required: true },
                     { name: 'model', type: 'string', required: true },
                     { name: 'imei', type: 'string', required: true },
                     { name: 'sn', type: 'string', required: true },
                     { name: 'sim', type: 'string', required: true },
-                    { name: 'enabled_option', type: 'complexe', required: true, data: {
-                        bsonType: ['array'],
-                        items: { bsonType: 'string' }
-                    }},
                     { name: 'adding_date', type: 'number', required: true },
                     { name: 'state', type: 'string', required: true },
                 ])
@@ -41,7 +36,46 @@ class MongoTrackerRepository implements ITrackerRepository {
                     result.imei,
                     result.sn,
                     result.sim,
-                    result.enabled_option,
+                    result.adding_date,
+                    result.state,
+                    result._id.toString()
+                ) }
+            }
+
+            return { data: null }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async getTrackers(): Promise<{ data?: TrackerEntity[]; err?: string }> {
+        try {
+            const result = (await this.collection.find().toArray()).map(x => new TrackerEntity(
+                x.brand,
+                x.model,
+                x.imei,
+                x.sn,
+                x.sim,
+                x.adding_date,
+                x.state,
+                x._id.toString()
+            ))
+            return { data: result }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async getTrackerByIMEI(imei: string): Promise<{ data?: TrackerEntity | null; err?: string }> {
+        try {
+            const result = await this.collection.findOne({ imei: imei })
+            if(result){
+                return { data: new TrackerEntity(
+                    result.brand,
+                    result.model,
+                    result.imei,
+                    result.sn,
+                    result.sim,
                     result.adding_date,
                     result.state,
                     result._id.toString()
@@ -56,13 +90,12 @@ class MongoTrackerRepository implements ITrackerRepository {
 
     async getAvailableTracker(): Promise<{ data?: TrackerEntity[]; err?: string }> {
         try {
-            const result = (await this.collection.find({ state: 'inventory' }).toArray()).map(x => new TrackerEntity(
+            const result = (await this.collection.find({ state: { $in: ['inventory', 'unpaired'] } }).toArray()).map(x => new TrackerEntity(
                 x.brand,
                 x.model,
                 x.imei,
                 x.sn,
                 x.sim,
-                x.enabled_option,
                 x.adding_date,
                 x.state,
                 x._id.toString()

@@ -1,8 +1,8 @@
 class PairingEventEntity {
     constructor(
         public readonly date: number,
-        public readonly type: 'on' | 'off' | 'moving' | 'stop',
-        public readonly alert: 'speeding' | 'impact' | 'sos-command' | 'off-state-activity' | 'fuel-thefting' | 'engine-lock' | 'engine-unlock' | 'buzzer-on' | 'buzzer-off' | 'microphone-on' | 'microphone-off' | 'in-geofence' | 'off-geofence',
+        public readonly type: 'on' | 'off' | 'moving' | 'stop' | 'state',
+        public readonly alert: 'speeding' | 'impact' | 'sos-command' | 'off-state-activity' | 'fuel-thefting' | 'engine-lock' | 'buzzer-on' | 'microphone-on' | 'in-geofence' | 'out-geofence' | '',
         public read: boolean,
         public localisation: { gps: { lat: number, lng: number }, location: string },
         public readonly orientation: number,

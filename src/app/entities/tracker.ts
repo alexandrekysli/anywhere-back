@@ -5,9 +5,8 @@ class TrackerEntity {
         public readonly imei: string,
         public readonly sn: string,
         public sim: string,
-        public enabled_option: string[],
         public readonly adding_date: number,
-        public state: 'inventory' | 'paired' | 'lost' | 'broken',
+        public state: 'inventory' | 'paired' | 'unpaired' | 'lost' | 'broken',
         public id?: string
     ){}
 }

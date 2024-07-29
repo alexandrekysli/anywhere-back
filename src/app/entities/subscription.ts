@@ -8,10 +8,9 @@ class SubscriptionEntity {
         public readonly customer: UserEntity | string,
         public readonly manager: UserEntity | string,
         public _package: PackageEntity | string,
-        public readonly adding_date: number,
+        public qte: number,
         public readonly starting_date: number,
-        public readonly package_quantity: number,
-        public vehicle: VehicleEntity[],
+        public vehicle: VehicleEntity[] | string[],
         public state: boolean,
         public id?: string
     ){}
@@ -25,13 +24,12 @@ class SubscriptionEntity {
             else if(nowDate > endDate) return 'end'
             else return 'actual'
         }
-        return ''
+        return 'suspend'
     }
 
     public endDate? = () => {
-        if(this._package instanceof PackageEntity && this.state){
-            const endDate = this.starting_date + this._package.day_validity * (86400000)
-            return Utils.timestampDiff(endDate, Date.now(), 'day')
+        if(this._package instanceof PackageEntity){
+            return this.starting_date + this._package.day_validity * (86400000)
         }
         return 0
     }

@@ -5,6 +5,7 @@ import VehicleEntity from "./vehicle"
 
 class PairingEntity {
     constructor(
+        public readonly identifier: string,
         public readonly vehicle: VehicleEntity | string,
         public readonly tracker: TrackerEntity | string,
         public readonly begin_date: number,

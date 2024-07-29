@@ -9,6 +9,7 @@ import { ExpressFractalRequest, HeavenExpressRouter } from "#core/heaven/routers
 import { MongoClient } from "mongodb"
 import Utils from "#utils/index.js"
 import AddNewUserAccount from "#app/services/add-new-user.js"
+import UpdateUserAuth from "#app/services/update-user-auth.js"
 
 /** TS */
 interface LoginRequest extends ExpressFractalRequest {
@@ -29,12 +30,22 @@ interface AddNewAccountRequest extends ExpressFractalRequest {
         }
     }
 }
+interface EditAccountAuthRequest extends ExpressFractalRequest {
+    body: {
+        pass_hash: string,
+        data: {
+            type: string,
+            list: { '2fa': boolean, email: string, phone: string, password: string }
+        }
+    }
+}
 
 export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) => {
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
     const loginUser = new LoginUser(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
     const dataUser = new GetUser(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
     const addNewUserAccount = new AddNewUserAccount(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
+    const updateUserAuth = new UpdateUserAuth(adlogs, new MongoUserRepository(mongoClient, 'anywhere'))
 
     /** ### Router dispatching ### */
 
@@ -98,6 +109,12 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
             res.json(Utils.makeHeavenResponse(res, result))
         }
         
+    })
+
+    // -> New user account saving
+    router.post('/edit-auth', async(req: EditAccountAuthRequest, res) => {
+        const updatedAuth = await updateUserAuth.execute(req.body.pass_hash, req.body.data.type, req.body.data.list)
+        res.json(Utils.makeHeavenResponse(res, updatedAuth))
     })
 
     return router

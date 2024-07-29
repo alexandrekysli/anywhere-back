@@ -31,6 +31,7 @@ class MongoPairingRepository implements IPairingRepository {
             db.command({
                 "collMod": "pairing", 
                 "validator": Utils.makeMongoSchemaValidation([
+                    { name: 'identifier', type: 'string', required: true },
                     { name: 'vehicle', type: 'string', required: true },
                     { name: 'tracker', type: 'string', required: true },
                     { name: 'begin_date', type: 'number', required: true },
@@ -88,6 +89,7 @@ class MongoPairingRepository implements IPairingRepository {
                     }
 
                     pairingList.push(new PairingEntity(
+                        pairing.identifier,
                         vehicle.data,
                         pairing.tracker,
                         pairing.begin_date,
@@ -127,6 +129,7 @@ class MongoPairingRepository implements IPairingRepository {
                     }
 
                     pairingList.push(new PairingEntity(
+                        pairing.identifier,
                         pairing.vehicle,
                         tracker.data,
                         pairing.begin_date,
@@ -167,6 +170,7 @@ class MongoPairingRepository implements IPairingRepository {
                     }
 
                     pairingList.push(new PairingEntity(
+                        pairing.identifier,
                         vehicle.data,
                         tracker.data,
                         pairing.begin_date,
@@ -197,6 +201,7 @@ class MongoPairingRepository implements IPairingRepository {
                 const pairingTrip = await this.pairingTripRepository.getPairingTrip(pairing.id || '')
                 if(vehicle.data && tracker.data && pairingEvent.data && pairingTrip.data){
                     return { data: new PairingEntity(
+                        pairing.identifier,
                         vehicle.data,
                         tracker.data,
                         pairing.begin_date,
@@ -218,7 +223,8 @@ class MongoPairingRepository implements IPairingRepository {
 
     async setPairingState(id: string, state: PairingEntity["state"]): Promise<{ data?: boolean; err?: string }> {
         try {
-            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { state : state } }, { upsert: false }) 
+            const endDate = !['inventory', 'paired'].includes(state) ? Date.now() : undefined
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { state : state, end_date: endDate } }, { upsert: false }) 
             return { data: Boolean(result.modifiedCount), err: '' }
         } catch (error) {
             return { data: false, err: error instanceof MongoError && error.message || '' }

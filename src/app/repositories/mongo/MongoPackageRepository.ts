@@ -3,7 +3,7 @@ import Utils from "#utils/index.js"
 import IPackageRepository from "../IPackageRepository"
 import PackageEntity from "#app/entities/package.js"
 
-class MongoSubscriptionRepository implements IPackageRepository {
+class MongoPackageRepository implements IPackageRepository {
     private collection
     constructor(mongoClient: MongoClient, dbName: string){
         const db = mongoClient.db(dbName)
@@ -67,7 +67,7 @@ class MongoSubscriptionRepository implements IPackageRepository {
 
     async getPackageByID(id: string): Promise<{ data?: PackageEntity | null; err?: string }> {
         try {
-            const result = await this.collection.findOne({ _id: new ObjectId })
+            const result = await this.collection.findOne({ _id: new ObjectId(id) })
             if(result){
                 const _package = new PackageEntity(
                     result.name,
@@ -86,7 +86,35 @@ class MongoSubscriptionRepository implements IPackageRepository {
         }
     }
 
-    
+    async getPackageByName(name: string): Promise<{ data?: PackageEntity | null; err?: string }> {
+        try {
+            const result = await this.collection.findOne({ name: name })
+            if(result){
+                const _package = new PackageEntity(
+                    result.name,
+                    result.day_validity,
+                    result.fleet_count,
+                    result.amount,
+                    result.accessibility,
+                    result.allowed_option,
+                    result.adding_date,
+                    result._id.toString()
+                )
+                return { data: _package }
+            }else return { data: null }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async removePackage(id: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.deleteOne({ _id: new ObjectId(id) }) 
+            return { data: Boolean(result.deletedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
 }
 
-export default MongoSubscriptionRepository
+export default MongoPackageRepository

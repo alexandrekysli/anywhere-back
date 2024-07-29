@@ -23,7 +23,7 @@ type EventMessageListenner = {
  */
 
 export default class {
-    private hub = new EventEmitter()
+    public hub = new EventEmitter()
     private runtimeEventMessageListennerList: Array<EventMessageListenner> = []
     private pendingLogItems: RuntimeEvent[] = []
     private repo: Repository | undefined
@@ -33,7 +33,7 @@ export default class {
         this.hub.on('app-runtime', async (data: RuntimeEvent) => {
             if(data.date){
                 const emoji = { ready: '🚀', info: '✅', warning: '⚠️ ', stop: '💥' }
-                console.log(`${emoji[data.type]} ${new Date(data.date).toISOString()} [ ${data.category} ]`, data.message)
+                console.log(`${emoji[data.type]} ${data.date} [ ${data.category} ]`, data.message)
 
                 if (data.type === "stop" && !data.save) {
                     console.log('💥 k-engine has been closed !')

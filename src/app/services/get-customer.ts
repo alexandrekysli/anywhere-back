@@ -11,7 +11,8 @@ type CustomerData = {
         phone: string,
         adding_date: number,
         godfather: string,
-        manager: string
+        manager: string,
+        manager_id: string
     }
 }
 
@@ -23,13 +24,13 @@ class GetCustomer {
         let err = ''
         if(customer.data){
             // -> Retrieve customer dep
-            const godfather = await this.userRepository.getUserByID(customer.data.godfather)
-            const manager = await this.userRepository.getUserByID(customer.data.manager)
+            const godfather = await this.userRepository.getUserByID(customer.data.godfather.toString())
+            const manager = await this.userRepository.getUserByID(customer.data.manager.toString())
             const activeSubscription = await this.subscriptionRepository.getActiveSubscriptionByCustomer(customer.data.id || '')
             if(godfather.data && manager.data && activeSubscription.data){
                 return {
                     recap: {
-                        name: customer.data.name + ' ' + customer.data.surname,
+                        name: customer.data.surname + ' ' + customer.data.name,
                         type: customer.data.type === 'particular' ? 'Client Particulier' : 'Client d\'Entreprise',
                         state: customer.data.state ? activeSubscription.data?.length && 'active' || "inactive" : 'disable'
                     },
@@ -37,8 +38,9 @@ class GetCustomer {
                         email: customer.data.email,
                         phone: customer.data.phone,
                         adding_date: customer.data.adding_date,
-                        godfather: godfather.data.name + ' ' + godfather.data.surname,
-                        manager: manager.data.name + ' ' + manager.data.surname,
+                        godfather: godfather.data.surname + ' ' + godfather.data.name,
+                        manager: manager.data.surname + ' ' + manager.data.name,
+                        manager_id: manager.data.id || ''
                     }
                 }
             }else err = godfather.err || manager.err || activeSubscription.err || ''

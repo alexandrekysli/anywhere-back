@@ -10,8 +10,8 @@ class UserEntity {
         public readonly type: 'admin' | 'global_manager' | 'manager' | 'corporate' | 'particular',
         public readonly state: boolean,
         public readonly adding_date: number,
-        public readonly godfather: string,
-        public manager: string,
+        public readonly godfather: UserEntity | string,
+        public manager: UserEntity | string,
         public auth: {
             tfa_state: boolean,
             pass_hash: string,

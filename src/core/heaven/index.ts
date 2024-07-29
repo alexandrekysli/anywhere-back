@@ -22,7 +22,7 @@ type dynamicRouteFolderItem = { path: string, router: string }
 
 class Heaven {
     private webServer: Express | undefined
-    private webLink: http.Server | undefined
+    public webLink: http.Server | undefined
     private serverType: 'express' | undefined
 
     constructor(

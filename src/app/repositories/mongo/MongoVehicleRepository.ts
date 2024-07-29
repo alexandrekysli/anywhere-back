@@ -2,10 +2,14 @@ import { MongoClient, MongoError, ObjectId } from "mongodb"
 import Utils from "#utils/index.js"
 import IVehicleRepository from "../IVehicleRepository"
 import VehicleEntity from "#app/entities/vehicle.js"
+import MongoUserRepository from "./MongoUserRepository"
 
 class MongoVehicleRepository implements IVehicleRepository {
     private collection
+    private userRepository
     constructor(mongoClient: MongoClient, dbName: string){
+        this.userRepository = new MongoUserRepository(mongoClient, dbName)
+
         const db = mongoClient.db(dbName)
         this.collection = db.collection<VehicleEntity>('vehicle')
         db.listCollections().toArray().then(async info => {
@@ -51,19 +55,22 @@ class MongoVehicleRepository implements IVehicleRepository {
         try {
             const result = await this.collection.findOne({ _id: new ObjectId(id) })
             if(result){
-                return { data: new VehicleEntity(
-                    result.brand,
-                    result.model,
-                    result.numberplate,
-                    result.type,
-                    result.group,
-                    result.driver,
-                    result.customer,
-                    result.maxspeed,
-                    result.state,
-                    result.adding_date,
-                    result._id.toString()
-                ) }
+                const customer = await this.userRepository.getUserByID(result.customer.toString())
+                if(customer.data){
+                    return { data: new VehicleEntity(
+                        result.brand,
+                        result.model,
+                        result.numberplate,
+                        result.type,
+                        result.group,
+                        result.driver,
+                        customer.data,
+                        result.maxspeed,
+                        result.state,
+                        result.adding_date,
+                        result._id.toString()
+                    ) }
+                }else return { data: null }
             }
 
             return { data: null }
@@ -93,12 +100,33 @@ class MongoVehicleRepository implements IVehicleRepository {
         }
     }
 
+    async editVehicle(id: string, numberplate: string, group: string, driver: string, speed: number): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: {
+                numberplate: numberplate,
+                group: group,
+                driver: driver,
+                maxspeed: speed
+            } }, { upsert: false })            
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            console.log(JSON.stringify(error));
+            
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
     async setVehicleStatut(id: string, statut: VehicleEntity["state"]): Promise<{ data?: boolean; err?: string }> {
         return { err: ''}
     }
 
     async removeVehicle(id: string): Promise<{ data?: boolean; err?: string }> {
-        return { err: ''}
+        try {
+            const result = await this.collection.deleteOne({ _id: new ObjectId(id) }) 
+            return { data: Boolean(result.deletedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
     }
 }
 

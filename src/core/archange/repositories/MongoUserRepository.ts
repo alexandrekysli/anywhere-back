@@ -87,6 +87,15 @@ class MongoArchangeUserRepository implements IArchangeUserRepository {
             return { err: error instanceof MongoError && error.message || '' }
         }
     }
+
+    async removeUser(id: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.userCollection.deleteOne({ _id: new ObjectId(id) }) 
+            return { data: Boolean(result.deletedCount), err: '' }
+        } catch (error) {
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
 }
 
 export default MongoArchangeUserRepository

@@ -7,6 +7,7 @@ import PackageEntity from "#app/entities/package.js"
 type SubscriptionListItem = {
     id: string,
     name: string,
+    price: number,
     begin_date: number,
     end_date: number,
     state: 'wait' | 'actual' | 'end' | 'suspend'
@@ -23,6 +24,7 @@ class GetCustomerSubscription {
                 returnedList.push({
                     id: subscription.id || '',
                     name: subscription._package instanceof PackageEntity ? subscription._package.name : '',
+                    price: subscription._package instanceof PackageEntity ? subscription._package.amount : 0,
                     state: subscription.state ? (subscription.status && subscription.status() || 'suspend') : 'suspend',
                     begin_date: subscription.starting_date,
                     end_date: subscription.endDate && subscription.endDate() || 0

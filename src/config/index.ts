@@ -98,7 +98,7 @@ const Config = {
                 limit: {
                     ip: 10,
                     known: 15,
-                    user: 30
+                    user: 50
                 },
                 frame_lifetime: 10
             },
@@ -114,6 +114,9 @@ const Config = {
                 delayed_time: 5 * 60 * 1000,
                 dos_ban_time: 1 * 3600 * 1000
             }
+        },
+        tracking_bot: {
+            devices_directory: '/modules/tracking-bot/devices'
         },
         email: {
             host: getParsedProperty('KE_EMAIL_HOST'),

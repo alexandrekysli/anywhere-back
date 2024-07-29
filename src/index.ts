@@ -19,9 +19,14 @@ import MongoHellRepository from "./core/archange/repositories/MongoHellRepositor
 import MongoCallerRepository from "./core/archange/repositories/MongoCallerRepository"
 import MongoOriginRepository from "./core/archange/repositories/MongoOriginRepository"
 import MongoArchangeUserRepository from "./core/archange/repositories/MongoUserRepository"
+import TrackingBot from "./modules/tracking-bot"
+import MongoTrackerRepository from "#app/repositories/mongo/MongoTrackerRepository.js"
+import MongoPairingRepository from "#app/repositories/mongo/MongoPairingRepository.js"
+import MongoPairingEventRepository from "#app/repositories/mongo/MongoPairingEventRepository.js"
+import MongoPairingTripRepository from "#app/repositories/mongo/MongoPairingTripRepository.js"
 
 
-/* ### -> App initialisation ### */
+/* ### -> App initialisation ### */ 
 const adlogs = new Adlogs()
 const heaven = new Heaven(adlogs, engineConfig)
 const mongoBase = new MongoBase(adlogs, engineConfig.infrastructure.database.mongo)
@@ -52,9 +57,21 @@ if(engineConfig.error){
         heaven.init('express', mongoBase, archange)
     }, true)
 
-    // -> Run heaven when is ready
+    // -> Run heaven & TrackingBot when is ready
     adlogs.listenRuntimeEventMessage('web server configuration complete', () => {
         const succesRunMessage = heaven.run()
+        
+        heaven.webLink && new TrackingBot(
+            engineConfig,
+            adlogs,
+            heaven.webLink,
+            archange,
+            new MongoTrackerRepository(mongoBase.client, 'anywhere'),
+            new MongoPairingRepository(mongoBase.client, 'anywhere'),
+            new MongoPairingEventRepository(mongoBase.client, 'anywhere'),
+            new MongoPairingTripRepository(mongoBase.client, 'anywhere')
+        )
+
         adlogs.listenRuntimeEventMessage(succesRunMessage, () => {
             adlogs.writeRuntimeEvent({
                 category: 'global',
