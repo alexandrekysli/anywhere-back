@@ -19,7 +19,8 @@ let requireEnvProperties = [
     'KE_EMAIL_HOST',
     'KE_EMAIL_PORT',
     'KE_EMAIL_USER',
-    'KE_EMAIL_PASSWORD'
+    'KE_EMAIL_PASSWORD',
+    'KE_GOOGLE_API_KEY'
 ]
 let interfaceToListen: NetworkInterfaces | undefined
 const envKEPropertiesName = Object.getOwnPropertyNames(process.env).filter(x => x.includes('KE_'))
@@ -116,7 +117,12 @@ const Config = {
             }
         },
         tracking_bot: {
-            devices_directory: '/modules/tracking-bot/devices'
+            devices_directory: '/modules/tracking-bot/devices',
+            trip_limit: {
+                min_move_duration: 300,
+                max_stop_duration: 300,
+                min_move_mileage: 500
+            }
         },
         email: {
             host: getParsedProperty('KE_EMAIL_HOST'),
@@ -126,6 +132,9 @@ const Config = {
                 user: getParsedProperty('KE_EMAIL_USER'),
                 pass: getParsedProperty('KE_EMAIL_PASSWORD')
             }
+        },
+        api_key: {
+            google: getParsedProperty('KE_GOOGLE_API_KEY')
         }
     }
 }

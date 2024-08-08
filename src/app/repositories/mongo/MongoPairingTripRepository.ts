@@ -2,10 +2,16 @@ import { MongoClient, MongoError, ObjectId } from "mongodb"
 import Utils from "#utils/index.js"
 import IPairingTripRepository from "../IPairingTripRepository"
 import PairingTripEntity from "#app/entities/pairing-trip.js"
+import MongoPairingEventRepository from "./MongoPairingEventRepository"
+import PairingEventEntity from "#app/entities/pairing-event.js"
 
 class MongoPairingTripRepository implements IPairingTripRepository {
     private collection
+    private pairingEventRepository
+
     constructor(mongoClient: MongoClient, dbName: string){
+        this.pairingEventRepository = new MongoPairingEventRepository(mongoClient, dbName)
+
         const db = mongoClient.db(dbName)
         this.collection = db.collection<PairingTripEntity>('pairing-trip')
         db.listCollections().toArray().then(async info => {
@@ -16,23 +22,10 @@ class MongoPairingTripRepository implements IPairingTripRepository {
                 "collMod": "pairing-trip", 
                 "validator": Utils.makeMongoSchemaValidation([
                     { name: 'date', type: 'number', required: true },
-                    { name: 'points', type: 'complexe', required: true, data: {
+                    { name: 'pairing', type: 'string', required: true },
+                    { name: 'events', type: 'complexe', required: true, data: {
                         bsonType: ['array'],
-                        items: {
-                            bsonType: 'object',
-                            required: ['lat', 'lng'],
-                            additionalProperties: false,
-                            properties: {
-                                lat: {
-                                    bsonType: 'number',
-                                    description: 'lat is required and must be a number'
-                                },
-                                lng: {
-                                    bsonType: 'number',
-                                    description: 'lng is required and must be a number'
-                                }
-                            }
-                        }
+                        items: { bsonType: 'string' }
                     }}
                 ])
             })
@@ -56,39 +49,30 @@ class MongoPairingTripRepository implements IPairingTripRepository {
         }
     }
 
-    async getPairingTrip(pairing: string): Promise<{ data?: PairingTripEntity[]; err?: string }> {
+    async getPairingTrips(pairing: string): Promise<{ data?: PairingTripEntity[]; err?: string }> {
+        const pairingTrip: PairingTripEntity[] = []
         try {
-            const result = (await this.collection.find({ pairing: pairing }).toArray()).map(x => new PairingTripEntity(
-                x.date,
-                x.points,
-                x._id.toString()
-            ))
-            return { data: result }
+            const result = (await this.collection.find({ pairing: pairing }).toArray())
+
+            for (const trip of result) {
+                const eventList: PairingEventEntity[] = []
+                for (const event of trip.events) {
+                    const eventData = (await this.pairingEventRepository.getPairingEvent(event.toString())).data
+                    eventData && eventList.push(eventData)
+                }
+                trip.events = eventList
+
+                pairingTrip.push(new PairingTripEntity(
+                    trip.date,
+                    trip.events,
+                    trip.pairing,
+                    trip._id.toString()
+                ))
+            }
+
+            return { data: pairingTrip }
         } catch (error) {
             return { err: error instanceof MongoError && error.message || '' }
-        }
-    }
-
-    async addTripPoints(id: string, positions: PairingTripEntity["points"]): Promise<{ data?: boolean; err?: string }> {
-        try {
-            let count = 0
-            for (const position of positions) {
-                const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $push: { points : position } }, { upsert: false })
-                count += result.modifiedCount
-            }
-            return { data: Boolean(count === positions.length), err: '' }
-        } catch (error) {
-            return { data: false, err: error instanceof MongoError && error.message || '' }
-        }
-    }
-
-    async updateTripPointLocation(id: string, index: number, name: string): Promise<{ data?: boolean; err?: string }> {
-        try {
-            const value = `points.${index}.name`
-            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { value: name } }, { upsert: false })
-            return { data: Boolean(result.modifiedCount), err: '' }
-        } catch (error) {
-            return { data: false, err: error instanceof MongoError && error.message || '' }
         }
     }
 }

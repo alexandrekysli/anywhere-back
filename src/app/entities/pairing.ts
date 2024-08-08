@@ -11,7 +11,7 @@ class PairingEntity {
         public readonly begin_date: number,
         public end_date: number,
         public geofence: '' | 'administrative-area',
-        public state: 'engine-on' | 'engine-off' | 'tracker-off' | 'lost' | 'end',
+        public state: 'heathly' | 'end',
         public last_state_date: number,
         public event_list: PairingEventEntity[],
         public trip_list: PairingTrip[],

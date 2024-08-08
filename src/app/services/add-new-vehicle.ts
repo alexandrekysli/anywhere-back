@@ -35,7 +35,7 @@ class AddNewVehicle {
             data.driver,
             data.customer,
             120,
-            'inventory',
+            data.tracker !== '' ? 'paired' : 'inventory',
             Date.now()
         ))
 
@@ -44,7 +44,7 @@ class AddNewVehicle {
             // -> Add new pairing -> if tracker is set
             if(data.tracker){
                 const identifier = 'PTV-' + Utils.genString(5, false, false)
-                const pairing = await this.pairingRepository.addPairing(new PairingEntity(identifier, newVehicle.data.id || '', data.tracker, Date.now(), 0, '', 'tracker-off', 0, [], [] ))
+                const pairing = await this.pairingRepository.addPairing(new PairingEntity(identifier, newVehicle.data.id || '', data.tracker, Date.now(), 0, '', 'heathly', 0, [], [] ))
                 const updateTrackerState = await this.trackerRepository.setTrackerStatut(data.tracker, 'paired')
                 if(pairing.err || updateTrackerState.err ) err = pairing.err || updateTrackerState.err || ''
                 else { id: newVehicle.data.id || '' }

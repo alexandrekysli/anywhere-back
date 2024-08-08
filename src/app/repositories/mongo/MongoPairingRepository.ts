@@ -80,8 +80,8 @@ class MongoPairingRepository implements IPairingRepository {
                     let pairingEvent: PairingEventEntity[] | undefined
                     let pairingTrip: PairingTripEntity[] | undefined
                     if(full){
-                        const pairingEventResult = await this.pairingEventRepository.getPairingEvent(pairing.id || '')
-                        const pairingTripResult = await this.pairingTripRepository.getPairingTrip(pairing.id || '')
+                        const pairingEventResult = await this.pairingEventRepository.getPairingEvents(pairing._id.toString())
+                        const pairingTripResult = await this.pairingTripRepository.getPairingTrips(pairing._id.toString())
                         if(pairingEventResult.data && pairingTripResult.data){
                             pairingEvent = pairingEventResult.data
                             pairingTrip = pairingTripResult.data
@@ -109,6 +109,30 @@ class MongoPairingRepository implements IPairingRepository {
         }
     }
 
+    async getHeathlyPairingbyTracker(tracker: string): Promise<{ data?: PairingEntity | null; err?: string }> {
+        try {
+            const pairing = await this.collection.findOne({ tracker: tracker, state: 'heathly' })
+            if(pairing){
+                return { data: new PairingEntity(
+                    pairing.identifier,
+                    pairing.vehicle,
+                    pairing.tracker,
+                    pairing.begin_date,
+                    pairing.end_date,
+                    pairing.geofence,
+                    pairing.state,
+                    pairing.last_state_date,
+                    pairing.event_list,
+                    pairing.trip_list,
+                    pairing._id.toString()
+                ) }
+            }
+            return { data: null }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
     async getPairingbyVehicle(vehicle: string, full: boolean): Promise<{ data?: PairingEntity[]; err?: string }> {
         const pairingList: PairingEntity[] = []
         try {
@@ -120,8 +144,8 @@ class MongoPairingRepository implements IPairingRepository {
                     let pairingEvent: PairingEventEntity[] | undefined
                     let pairingTrip: PairingTripEntity[] | undefined
                     if(full){
-                        const pairingEventResult = await this.pairingEventRepository.getPairingEvent(pairing.id || '')
-                        const pairingTripResult = await this.pairingTripRepository.getPairingTrip(pairing.id || '')
+                        const pairingEventResult = await this.pairingEventRepository.getPairingEvents(pairing._id.toString())
+                        const pairingTripResult = await this.pairingTripRepository.getPairingTrips(pairing._id.toString())
                         if(pairingEventResult.data && pairingTripResult.data){
                             pairingEvent = pairingEventResult.data
                             pairingTrip = pairingTripResult.data
@@ -161,8 +185,8 @@ class MongoPairingRepository implements IPairingRepository {
                     let pairingEvent: PairingEventEntity[] | undefined
                     let pairingTrip: PairingTripEntity[] | undefined
                     if(full){
-                        const pairingEventResult = await this.pairingEventRepository.getPairingEvent(pairing.id || '')
-                        const pairingTripResult = await this.pairingTripRepository.getPairingTrip(pairing.id || '')
+                        const pairingEventResult = await this.pairingEventRepository.getPairingEvents(pairing._id.toString())
+                        const pairingTripResult = await this.pairingTripRepository.getPairingTrips(pairing._id.toString())
                         if(pairingEventResult.data && pairingTripResult.data){
                             pairingEvent = pairingEventResult.data
                             pairingTrip = pairingTripResult.data
@@ -197,8 +221,8 @@ class MongoPairingRepository implements IPairingRepository {
                 // -> Retrieve dependency
                 const vehicle = await this.vehicleRepository.getVehicle(pairing.vehicle.toString())
                 const tracker = await this.trackerRepository.getTracker(pairing.tracker.toString())
-                const pairingEvent = await this.pairingEventRepository.getPairingEvent(pairing.id || '')
-                const pairingTrip = await this.pairingTripRepository.getPairingTrip(pairing.id || '')
+                const pairingEvent = await this.pairingEventRepository.getPairingEvents(pairing._id.toString())
+                const pairingTrip = await this.pairingTripRepository.getPairingTrips(pairing._id.toString())
                 if(vehicle.data && tracker.data && pairingEvent.data && pairingTrip.data){
                     return { data: new PairingEntity(
                         pairing.identifier,
@@ -209,7 +233,7 @@ class MongoPairingRepository implements IPairingRepository {
                         pairing.geofence,
                         pairing.state,
                         pairing.last_state_date,
-                        pairingEvent.data,
+                        [pairingEvent.data[pairingEvent.data.length - 1]],
                         pairingTrip.data,
                         pairing._id.toString()
                     ) }

@@ -36,7 +36,7 @@ class GetTrackerPairingList {
                         vehicle: vehicle,
                         begin_date: pairing.begin_date,
                         end_date: pairing.end_date,
-                        state: pairing.end_date ? 'uncoupled' : 'coupled'
+                        state: pairing.end_date ? 'unpaired' : 'paired'
                     })
                 }
             })

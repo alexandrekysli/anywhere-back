@@ -79,6 +79,26 @@ class MongoVehicleRepository implements IVehicleRepository {
         }
     }
 
+    async getVehicles(): Promise<{ data?: VehicleEntity[]; err?: string }> {
+        try {
+            const result = (await this.collection.find().toArray()).map(x => new VehicleEntity(
+                x.brand,
+                x.model,
+                x.numberplate,
+                x.type,
+                x.group,
+                x.driver,
+                x.customer,
+                x.maxspeed,
+                x.state,
+                x.adding_date,
+                x._id.toString()
+            ))
+            return { data: result }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
     async getVehicleByCustomer(customer: string): Promise<{ data?: VehicleEntity[] | null; err?: string }> {
         try {
             const result = (await this.collection.find({ customer: customer }).toArray()).map(x => new VehicleEntity(
@@ -117,7 +137,14 @@ class MongoVehicleRepository implements IVehicleRepository {
     }
 
     async setVehicleStatut(id: string, statut: VehicleEntity["state"]): Promise<{ data?: boolean; err?: string }> {
-        return { err: ''}
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { state: statut } }, { upsert: false })            
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            console.log(JSON.stringify(error));
+            
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
     }
 
     async removeVehicle(id: string): Promise<{ data?: boolean; err?: string }> {

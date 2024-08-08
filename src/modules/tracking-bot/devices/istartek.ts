@@ -55,6 +55,7 @@ class iStartekTrackerDevice implements ITrackerDevice {
         1: 'sos',
         3: 'acc_on',
         4: 'acc_off',
+        20: 'low_batery',
         32: 'power_on',
         33: 'power_off',
         22: 'speeding',
@@ -145,11 +146,12 @@ class iStartekTrackerDevice implements ITrackerDevice {
                 indexs.forEach(x => this.commandStack.splice(x, 1))
                 if(message.cmd_code === 801) {
                     this.onNewEvent({ 
+                        date: 0,
                         brand: 'istartek',
                         imei: message.imei,
-                        event: 'command_response',
+                        event: 'command-response',
                         response: {
-                            name: 'device_info',
+                            name: 'device-info',
                             data: {
                                 sn: message.cmd_data[0],
                                 model: message.cmd_data[2].replace(/_V(([0-9]|[a-z])+)/gi, '').replace(/_/gi, ' ')
@@ -161,8 +163,9 @@ class iStartekTrackerDevice implements ITrackerDevice {
         }else{
             // -> Tracker event response
             const eventName = (this.eventCode[message.alm_code as keyof typeof this.eventCode] || 'state') as TrackerMessage['event']
-
+            
             this.onNewEvent({
+                date: this.convertDate(message.date),
                 brand: 'istartek',
                 imei: message.imei,
                 event: eventName,
@@ -177,14 +180,14 @@ class iStartekTrackerDevice implements ITrackerDevice {
                     } || undefined,
                     device: {
                         battery: {
-                            low: message.alm_code === 20,
                             powered: message.status.powered
                         },
                         network: { signal: message.status.gsm }
                     },
                     io: {
                         acc: message.input[1],
-                        relay: message.output[0]
+                        relay: message.output[0],
+                        buzzer: false
                     }
                 }
             })
@@ -238,6 +241,25 @@ class iStartekTrackerDevice implements ITrackerDevice {
         let checksum = 0
         for (let i = 0; i < value.length; i++) checksum += value.charCodeAt(i)
         return checksum.toString(16).toUpperCase().slice(-2)
+    }
+
+    private convertDate = (value: string) => {
+        if(value.length === 12){
+            const date = new Date()
+            date.setFullYear(
+                Number('20' + value.slice(0,2)),
+                Number(value.slice(2,4)) - 1,
+                Number(value.slice(4,6))
+            )
+            date.setHours(
+                Number(value.slice(6,8)),
+                Number(value.slice(8,10)),
+                Number(value.slice(10,12))
+            )
+
+            return date.getTime()
+        }
+        return 0
     }
 }
 export default iStartekTrackerDevice

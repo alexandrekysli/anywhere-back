@@ -24,6 +24,9 @@ import MongoTrackerRepository from "#app/repositories/mongo/MongoTrackerReposito
 import MongoPairingRepository from "#app/repositories/mongo/MongoPairingRepository.js"
 import MongoPairingEventRepository from "#app/repositories/mongo/MongoPairingEventRepository.js"
 import MongoPairingTripRepository from "#app/repositories/mongo/MongoPairingTripRepository.js"
+import MongoUserRepository from "#app/repositories/mongo/MongoUserRepository.js"
+import MongoVehicleRepository from "#app/repositories/mongo/MongoVehicleRepository.js"
+import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
 
 
 /* ### -> App initialisation ### */ 
@@ -66,6 +69,9 @@ if(engineConfig.error){
             adlogs,
             heaven.webLink,
             archange,
+            new MongoUserRepository(mongoBase.client, 'anywhere'),
+            new MongoVehicleRepository(mongoBase.client, 'anywhere'),
+            new MongoSubscriptionRepository(mongoBase.client, 'anywhere'),
             new MongoTrackerRepository(mongoBase.client, 'anywhere'),
             new MongoPairingRepository(mongoBase.client, 'anywhere'),
             new MongoPairingEventRepository(mongoBase.client, 'anywhere'),

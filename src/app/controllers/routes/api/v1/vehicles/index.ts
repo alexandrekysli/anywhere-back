@@ -15,6 +15,7 @@ import GetUnsubscribedCustomerVehicle from "#app/services/get-unsubscribed-custo
 import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
 import EditVehicle from "#app/services/edit-vehicle.js"
 import MongoTrackerRepository from "#app/repositories/mongo/MongoTrackerRepository.js"
+import GetAvailableVehicle from "#app/services/get-available-vehicle.js"
 
 /** TS */
 interface VehicleRequest extends ExpressFractalRequest {
@@ -48,6 +49,9 @@ interface EditVehicleRequest extends ExpressFractalRequest {
         }
     }
 }
+interface GetAvailableVehicleRequest extends ExpressFractalRequest {
+    body: { id: string }
+}
 
 export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) => {
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
@@ -65,11 +69,16 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     const addNewVehicle = new AddNewVehicle(adlogs, vehicleRepository, trackerRepository, pairingRepository)
     const getCustomerVehicle = new GetCustomerVehicle(adlogs, vehicleRepository, pairingRepository)
     const getUnsubscribedCustomerVehicle = new GetUnsubscribedCustomerVehicle(adlogs, subscriptionRepository, vehicleRepository)
+    const getAvailableVehicle = new GetAvailableVehicle(adlogs, vehicleRepository, pairingRepository)
     
     /** ### Router dispatching ### */
     router.post('/get-by-customer', async(req: GetVehicleByCustomerRequest, res) => {
         const customerVehicle = await getCustomerVehicle.execute(req.body.id)
         res.json(Utils.makeHeavenResponse(res, customerVehicle))
+    })
+    router.post('/get-available-vehicle', async(req: GetAvailableVehicleRequest, res) => {
+        const list = await getAvailableVehicle.execute(req.body.id)
+        res.json(Utils.makeHeavenResponse(res, list))
     })
     router.post('/get-unsubscribed-by-customer', async(req: GetVehicleByCustomerRequest, res) => {
         const vehicle = await getUnsubscribedCustomerVehicle.execute(req.body.id)

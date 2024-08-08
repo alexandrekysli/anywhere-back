@@ -13,6 +13,7 @@ import MongoPairingRepository from "#app/repositories/mongo/MongoPairingReposito
 import GetTracker from "#app/services/get-tracker.js"
 import SetTrackerState from "#app/services/set-tracker-state.js"
 import DeleteTracker from "#app/services/delete-tracker.js"
+import MongoVehicleRepository from "#app/repositories/mongo/MongoVehicleRepository.js"
 
 /** TS */
 interface TrackerRequest extends ExpressFractalRequest { body: { id: string } }
@@ -39,6 +40,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
     /** ### Load Repositories ### */
     const trackerRepository = new MongoTrackerRepository(mongoClient, 'anywhere')
+    const vehicleRepository = new MongoVehicleRepository(mongoClient, 'anywhere')
     const pairingRepository = new MongoPairingRepository(mongoClient, 'anywhere')
 
     /** ### Load Services ### */
@@ -47,7 +49,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     const getAvailableTracker = new GetAvailableTracker(adlogs, trackerRepository)
     const getTrackerPairingList = new GetTrackerPairingList(adlogs, pairingRepository)
     const addNewTracker = new AddNewTracker(adlogs, trackerRepository)
-    const setTrackerState = new SetTrackerState(adlogs, trackerRepository, pairingRepository)
+    const setTrackerState = new SetTrackerState(adlogs, trackerRepository, pairingRepository, vehicleRepository)
     const deleteTracker = new DeleteTracker(adlogs, trackerRepository)
 
     /** ### Router dispatching ### */

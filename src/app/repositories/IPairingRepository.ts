@@ -6,6 +6,7 @@ interface IPairingRepository{
     getAllPairing(full: boolean): Promise<{ data?: PairingEntity[], err?: string }>
     getPairingbyVehicle(vehicle: string, full: boolean): Promise<{ data?: PairingEntity[], err?: string }>
     getPairingbyTracker(tracker: string, full: boolean): Promise<{ data?: PairingEntity[], err?: string }>
+    getHeathlyPairingbyTracker(tracker: string): Promise<{ data?: PairingEntity | null, err?: string }>
     setPairingState(id: string, state: PairingEntity['state']):Promise<{ data?: boolean, err?: string }>
     setPairingGeofence(id: string, mode: PairingEntity['geofence']):Promise<{ data?: boolean, err?: string }>
     setPairingLastStateDate(id: string, date: number):Promise<{ data?: boolean, err?: string }>
