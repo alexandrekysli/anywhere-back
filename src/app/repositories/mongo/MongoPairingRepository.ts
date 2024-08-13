@@ -255,9 +255,9 @@ class MongoPairingRepository implements IPairingRepository {
         }
     }
 
-    async setPairingGeofence(id: string, mode: PairingEntity["geofence"]): Promise<{ data?: boolean; err?: string }> {
+    async setPairingGeofence(id: string, fenceArea: string): Promise<{ data?: boolean; err?: string }> {
         try {
-            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { geofence : mode } }, { upsert: false }) 
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { geofence : fenceArea } }, { upsert: false }) 
             return { data: Boolean(result.modifiedCount), err: '' }
         } catch (error) {
             return { data: false, err: error instanceof MongoError && error.message || '' }

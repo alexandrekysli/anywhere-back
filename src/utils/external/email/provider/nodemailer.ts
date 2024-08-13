@@ -3,16 +3,6 @@ import IEMailProvider from "./iEmailProvider";
 
 import Nodemailer from "nodemailer"
 
-/** TS */
-type SendMailData = {
-    to: string[],
-    data: {
-        from: string,
-        subject: string,
-        message: { text: string | undefined, html: string | undefined }
-    }
-}
-
 class NodemailerMiddleware implements IEMailProvider{
     private transporter
     constructor(private config: ConfigType['infrastructure']['email']){

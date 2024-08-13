@@ -1,7 +1,7 @@
 class PairingEventEntity {
     constructor(
         public readonly date: number,
-        public readonly alert: 'command-response' | 'state' | 'power-on' | 'power-off' | 'sos' | 'relay' | 'buzzer' | 'speeding' | 'suspicious-activity' | 'impact',
+        public readonly alert: 'command-response' | 'state' | 'low-battery' | 'power-on' | 'power-off' | 'sos' | 'relay-on' | 'relay-off' | 'buzzer-on' | 'buzzer-off' | 'speeding' | 'suspicious-activity' | 'impact' | 'fence-in' | 'fence-out' | 'powered' | 'unpowered' | 'gps-lost' | 'gps-found',
         public read: boolean,
         public localisation: { gps: { lat: number, lng: number }, location: string },
         public readonly orientation: number,

@@ -6,9 +6,11 @@ import PairingEventEntity from "#app/entities/pairing-event.js"
 
 /** TS */
 class AddNewPairingEvent {
+    private softAlert = ['low-battery', 'power-on', 'power-off', 'relay-on', 'buzzer-on', 'fence-in', 'powered', 'unpowered', 'gps-lost', 'gps-found']
+
     constructor(private adlogs: Adlogs, private repository: IPairingEventRepository){}
 
-    public execute = async (pairingID: string, eventMessage: TrackerMessage): Promise<TrackData | null> => {
+    public execute = async (pairingID: string, eventMessage: TrackerMessage, fenceValue: TrackData['fence_value']): Promise<TrackData | null> => {
         let err = ''
 
         if(eventMessage.state){
@@ -43,7 +45,7 @@ class AddNewPairingEvent {
                             eventMessage.state.gps.odometer,
                             eventMessage.state.device.battery,
                             eventMessage.state.device.network.signal,
-                            '',
+                            fenceValue,
                             eventMessage.state.io.acc,
                             eventMessage.state.io.relay,
                             eventMessage.state.io.buzzer,
@@ -78,18 +80,18 @@ class AddNewPairingEvent {
                         const entity = new PairingEventEntity(
                             Date.now(),
                             eventMessage.event,
-                            false,
+                            this.softAlert.includes(eventMessage.event) ? true : false,
                             lastPosition.data.localisation,
                             lastPosition.data.orientation,
                             Utils.timestampDiff(Date.now(), lastPosition.data.date, 'hour') > 1 ? 0 : lastPosition.data.speed,
                             lastPosition.data.altitude,
                             lastPosition.data.odometer,
-                            lastPosition.data.battery,
-                            lastPosition.data.network_level,
+                            eventMessage.state.device.battery,
+                            eventMessage.state.device.network.signal,
                             lastPosition.data.fence,
-                            lastPosition.data.acc,
-                            lastPosition.data.relay,
-                            lastPosition.data.buzzer,
+                            eventMessage.state.io.acc,
+                            eventMessage.state.io.relay,
+                            eventMessage.state.io.buzzer,
                             pairingID
                         )
                         return await this.customSave(entity)

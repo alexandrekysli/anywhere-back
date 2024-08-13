@@ -20,7 +20,10 @@ let requireEnvProperties = [
     'KE_EMAIL_PORT',
     'KE_EMAIL_USER',
     'KE_EMAIL_PASSWORD',
-    'KE_GOOGLE_API_KEY'
+    'KE_GOOGLE_API_KEY',
+    'KE_ORANGE_API_ID',
+    'KE_ORANGE_API_SECRET',
+    'KE_ORANGE_API_AUTHOTIZATION'
 ]
 let interfaceToListen: NetworkInterfaces | undefined
 const envKEPropertiesName = Object.getOwnPropertyNames(process.env).filter(x => x.includes('KE_'))
@@ -132,6 +135,11 @@ const Config = {
                 user: getParsedProperty('KE_EMAIL_USER'),
                 pass: getParsedProperty('KE_EMAIL_PASSWORD')
             }
+        },
+        sms: {
+            authorization: getParsedProperty('KE_ORANGE_API_AUTHOTIZATION'),
+            secret: getParsedProperty('KE_ORANGE_API_SECRET'),
+            id: getParsedProperty('KE_ORANGE_API_ID')
         },
         api_key: {
             google: getParsedProperty('KE_GOOGLE_API_KEY')

@@ -27,6 +27,8 @@ import MongoPairingTripRepository from "#app/repositories/mongo/MongoPairingTrip
 import MongoUserRepository from "#app/repositories/mongo/MongoUserRepository.js"
 import MongoVehicleRepository from "#app/repositories/mongo/MongoVehicleRepository.js"
 import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
+import SMS from "./utils/external/sms"
+import MongoFenceAreaRepository from "#app/repositories/mongo/MongoFenceAreaRepository.js"
 
 
 /* ### -> App initialisation ### */ 
@@ -68,14 +70,14 @@ if(engineConfig.error){
             engineConfig,
             adlogs,
             heaven.webLink,
-            archange,
             new MongoUserRepository(mongoBase.client, 'anywhere'),
             new MongoVehicleRepository(mongoBase.client, 'anywhere'),
             new MongoSubscriptionRepository(mongoBase.client, 'anywhere'),
             new MongoTrackerRepository(mongoBase.client, 'anywhere'),
             new MongoPairingRepository(mongoBase.client, 'anywhere'),
             new MongoPairingEventRepository(mongoBase.client, 'anywhere'),
-            new MongoPairingTripRepository(mongoBase.client, 'anywhere')
+            new MongoPairingTripRepository(mongoBase.client, 'anywhere'),
+            new MongoFenceAreaRepository(mongoBase.client, 'anywhere')
         )
 
         adlogs.listenRuntimeEventMessage(succesRunMessage, () => {

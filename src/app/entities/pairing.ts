@@ -10,7 +10,7 @@ class PairingEntity {
         public readonly tracker: TrackerEntity | string,
         public readonly begin_date: number,
         public end_date: number,
-        public geofence: '' | 'administrative-area',
+        public geofence: string,
         public state: 'heathly' | 'end',
         public last_state_date: number,
         public event_list: PairingEventEntity[],

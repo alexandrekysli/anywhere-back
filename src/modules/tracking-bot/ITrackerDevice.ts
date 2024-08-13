@@ -8,7 +8,7 @@ interface ITrackerDevice {
     decodeMessage(data: string): any
     encodeMessage(...args: any): any
     checkMessage(message: any): TrackerMessage | null
-    exeCommand(imei: string, name: 'device-info' | 'cut-output' | 'start-output'): void
+    exeCommand(imei: string, name: "device-info" | "relay-on" | "relay-off"): void
 }
 
 export default ITrackerDevice

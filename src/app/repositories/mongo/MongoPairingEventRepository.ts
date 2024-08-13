@@ -146,6 +146,35 @@ class MongoPairingEventRepository implements IPairingEventRepository {
             return { err: error instanceof MongoError && error.message || '' }
         }
     }
+    
+    async getPairingEventBySavedLocation(position: Coordinates): Promise<{ data?: PairingEventEntity | null; err?: string }> {
+        try {
+            const pairingEvent = (await this.collection.find({ 'localisation.gps.lat': position.lat, 'localisation.gps.lng': position.lng }).toArray()).filter(x => x.localisation.location)[0]
+            if(pairingEvent){
+                return { data: new PairingEventEntity(
+                    pairingEvent.date,
+                    pairingEvent.alert,
+                    pairingEvent.read,
+                    pairingEvent.localisation,
+                    pairingEvent.orientation,
+                    pairingEvent.speed,
+                    pairingEvent.altitude,
+                    pairingEvent.odometer,
+                    pairingEvent.battery,
+                    pairingEvent.network_level,
+                    pairingEvent.fence,
+                    pairingEvent.acc,
+                    pairingEvent.relay,
+                    pairingEvent.buzzer,
+                    pairingEvent.pairing,
+                    pairingEvent._id.toString()
+                ) }
+            }
+            return { data: null }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
 
     async getPairingEvents(pairing: string): Promise<{ data?: PairingEventEntity[]; err?: string }> {
         try {
@@ -173,9 +202,11 @@ class MongoPairingEventRepository implements IPairingEventRepository {
         }
     }
 
-    async getAllUnreadPairingEventAlert(pairing: string): Promise<{ data?: string[]; err?: string }> {
+    async getAllUnreadPairingEventAlert(pairing: string): Promise<{ data?: { id: string, alert: string }[]; err?: string }> {
         try {
-            const result = (await this.collection.find({ pairing: pairing, read: false }, { sort: ({ _id: -1 }) }).toArray()).map(x => x.alert)
+            const result = (await this.collection.find({ pairing: pairing, read: false }, { sort: ({ _id: -1 }) }).toArray()).map(x => {
+                return { id: x._id.toString(), alert: x.alert }
+            })
             return { data: result }
         } catch (error) {
             return { err: error instanceof MongoError && error.message || '' }
@@ -185,6 +216,17 @@ class MongoPairingEventRepository implements IPairingEventRepository {
     async makeAllEventRead(pairing: string): Promise<{ data?: boolean; err?: string }> {
         try {
             const result = await this.collection.updateMany({ pairing: pairing, read: false }, { $set: { read: true } }, { upsert: false }) 
+            return { data: Boolean(result.modifiedCount), err: '' }
+        } catch (error) {
+            console.log(JSON.stringify(error));
+            
+            return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async makePairingEventRead (id: string): Promise<{ data?: boolean; err?: string }> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { read: true } }, { upsert: false }) 
             return { data: Boolean(result.modifiedCount), err: '' }
         } catch (error) {
             console.log(JSON.stringify(error));

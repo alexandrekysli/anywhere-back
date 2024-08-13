@@ -12,7 +12,7 @@ type TrackerMessage = {
     date: number,
     brand: string,
     imei: string,
-    event: 'command-response' | 'state' | 'power-on' | 'power-off' | 'sos' | 'relay' | 'buzzer' | 'speeding' | 'suspicious-activity' | 'impact',
+    event: 'command-response' | 'state' | 'low-battery' | 'power-on' | 'power-off' | 'sos' | 'relay-on' | 'relay-off' | 'buzzer-on' | 'buzzer-off' | 'speeding' | 'suspicious-activity' | 'impact' | 'fence-in' | 'fence-out' | 'powered' | 'unpowered' | 'gps-lost' | 'gps-found',
     response?: { name:  'device-info' | 'relay-lock' | 'relay-unlock', data: any },
     state?: {
         move: boolean,
@@ -47,6 +47,7 @@ type TrackData = {
     speed: number,
     odometer: number,
     orientation: number,
+    fence?: {id: string, name: string, coordinates: Coordinates[]},
     fence_value: 'in' | 'out' | '',
     device: {
         battery: { powered: boolean },
@@ -54,6 +55,17 @@ type TrackData = {
     },
     io: { acc: boolean, relay: boolean, buzzer: boolean }
 }
+
+type SendMailData = {
+    to: string[],
+    data: {
+        from: string,
+        subject: string,
+        message: { text: string | undefined, html: string | undefined }
+    }
+}
+
+type SendSMSData = { to: string, message: string }
 
 interface GoogleReverseGeocodeResponse {
     plus_code: { compound_code: string, global_code: string },

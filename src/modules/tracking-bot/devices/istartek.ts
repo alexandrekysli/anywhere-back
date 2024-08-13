@@ -53,16 +53,17 @@ class iStartekTrackerDevice implements ITrackerDevice {
     private eventCode = {
         0: 'state',
         1: 'sos',
-        3: 'acc_on',
-        4: 'acc_off',
-        20: 'low_batery',
-        32: 'power_on',
-        33: 'power_off',
+        3: 'acc-on',
+        4: 'acc-off',
+        20: 'low-battery',
+        32: 'power-on',
+        33: 'power-off',
         22: 'speeding',
-        111: 'suspicious_activity',
+        111: 'suspicious-activity',
         42: 'impact'
     }
     private commandStack: {imei: string, code: number, cmd: string}[] = []
+    private trackerTwoLastState: {imei: string, state: { powered: boolean, gps: boolean, relay: boolean, buzzer: boolean }[]}[] = []
 
     constructor(public adlogs: Adlogs, public onNewEvent: (data: TrackerMessage) => any){
         this.makeServer()
@@ -158,12 +159,38 @@ class iStartekTrackerDevice implements ITrackerDevice {
                             }
                         }
                     })
+                }else{
+                    console.log(message);
+                    
                 }
             }
         }else{
             // -> Tracker event response
-            const eventName = (this.eventCode[message.alm_code as keyof typeof this.eventCode] || 'state') as TrackerMessage['event']
+            let eventName = (this.eventCode[message.alm_code as keyof typeof this.eventCode] || 'state') as TrackerMessage['event']
             
+            // -> TwoLastState check
+            const trackerTWS = this.trackerTwoLastState.filter(x => x.imei === message.imei)[0]            
+            if(trackerTWS){
+                if(trackerTWS.state.length === 2) trackerTWS.state.shift()
+                trackerTWS.state.push({ powered: message.status.powered, gps: message.gps.state, relay: message.output[0], buzzer: message.output[1] })
+
+                if(trackerTWS.state[0].powered !== trackerTWS.state[1].powered){
+                    // -> Powered state change
+                    eventName = trackerTWS.state[0].powered ? 'unpowered' : 'powered'
+                }else if(trackerTWS.state[0].gps !== trackerTWS.state[1].gps){
+                    // -> GPS state change
+                    eventName = trackerTWS.state[0].gps ? 'gps-lost' : 'gps-found'
+                }else if(trackerTWS.state[0].relay !== trackerTWS.state[1].relay){
+                    // -> Relay state change
+                    eventName = trackerTWS.state[0].relay ? 'relay-off' : 'relay-on'
+                }else if(trackerTWS.state[0].buzzer !== trackerTWS.state[1].buzzer){
+                    // -> Buzzer state change
+                    eventName = trackerTWS.state[0].buzzer ? 'buzzer-off' : 'buzzer-on'
+                }
+            }else{
+                this.trackerTwoLastState.push({ imei: message.imei, state: [{ powered: message.status.powered, gps: message.gps.state, relay: message.output[0], buzzer: message.output[1] }] })
+            }
+
             this.onNewEvent({
                 date: this.convertDate(message.date),
                 brand: 'istartek',
@@ -232,8 +259,10 @@ class iStartekTrackerDevice implements ITrackerDevice {
         })
     }
 
-    async exeCommand(imei: string, name: "device-info" | "cut-output" | "start-output"){
+    async exeCommand(imei: string, name: "device-info" | "relay-on" | "relay-off"){
         if(name === 'device-info') this.commandStack.push({ imei: imei, code: 801, cmd: '' })
+        else if(name === 'relay-on') this.commandStack.push({ imei: imei, code: 900, cmd: '1,1,0,0' })
+        else if(name === 'relay-off') this.commandStack.push({ imei: imei, code: 900, cmd: '1,0,0,0' })
     }
 
     // -> Inbuilt method
