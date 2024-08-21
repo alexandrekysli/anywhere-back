@@ -28,6 +28,7 @@ import GetLocationName from "#app/services/get-location-name.js"
 import IFenceAreaRepository from "#app/repositories/IFenceAreaRepository.js"
 import GetFenceValue from "#app/services/get-fence-value.js"
 import GetFenceArea from "#app/services/get-fence-area.js"
+import GetLastPairingFenceValue from "#app/services/get-last-pairing-fence.js"
 
 
 /** TS */
@@ -42,7 +43,6 @@ type NewTracker = { brand: string, model: string, sn: string, imei: string }
 
 class TrackingBot {
     private newTrackerList: NewTracker[] = []
-    private lastPairingData: { id: string, fence: '' | 'in' | 'out' }[] = []
     private trackerDeviceType: {[key: string]: ITrackerDevice } = {}
     private io?: ServerIO
     private services
@@ -91,7 +91,8 @@ class TrackingBot {
             getActiveSubscriptionVehicle: new GetActiveSubscriptionVehicle(adlogs, subscriptionrepository),
             getVehicle: new GetVehicle(adlogs, vehicleRepository, subscriptionrepository),
             getFenceArea: new GetFenceArea(adlogs, pairingRepository, fenceAreaRepository),
-            getFenceValue: new GetFenceValue(adlogs, pairingRepository, fenceAreaRepository)
+            getFenceValue: new GetFenceValue(adlogs, pairingRepository, fenceAreaRepository),
+            getLastPairingFenceValue: new GetLastPairingFenceValue(pairingEventRepository)
         }
         this.sms = new SMS(adlogs)
 
@@ -192,17 +193,22 @@ class TrackingBot {
                         // -> Dynamic alert check
                         // -> Speeding
                         if(data.state.gps && data.state.gps.speed > vehicle.max_speed) data.event === 'speeding'
-
+                        
                         // -> GeoFence
                         let fenceValue: TrackData['fence_value'] = ''
-                        if(subscription._package.allowed_option.includes('Geofence') && data.state.gps){
+                        if(
+                            subscription._package.allowed_option.includes('Geofence') &&
+                            pairing.geofence !== '' &&
+                            data.state.gps
+                        ){
                             const actualPosition = data.state.gps.coordinates
-                            const lastState = this.lastPairingData.filter(x => x.id === pairing.id)[0]
+                            const lastEventFenceValue = (await this.services.getLastPairingFenceValue.execute(pairing.id || '')).value
                             
-                            fenceValue = (await this.services.getFenceValue.execute(pairing.id || '', actualPosition)).value
-                            if(fenceValue && fenceValue !== lastState.fence) data.event = fenceValue === 'in' ? 'fence-in' : 'fence-out'
+                            if(lastEventFenceValue){
+                                fenceValue = (await this.services.getFenceValue.execute(pairing.id || '', actualPosition)).value                              
+                                if(fenceValue && fenceValue !== lastEventFenceValue) data.event = fenceValue === 'in' ? 'fence-in' : 'fence-out'
+                            }
                         }
-
                         
                         // -> Check and save PairingEvent
                         const option = this.lockTrackerEffect[data.event as keyof typeof this.lockTrackerEffect]
@@ -210,6 +216,7 @@ class TrackingBot {
 
                         if(pass){
                             const result = await this.services.addNewPairingEvent.execute(pairing.id || '', data, fenceValue)
+                            
                             if(result){
                                 this.io.emit('track-event', { id: pairing.id, data: result })
                                 this.tripMaker.newPairingEvent(pairing.id || '', result)

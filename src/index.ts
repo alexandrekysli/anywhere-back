@@ -27,7 +27,6 @@ import MongoPairingTripRepository from "#app/repositories/mongo/MongoPairingTrip
 import MongoUserRepository from "#app/repositories/mongo/MongoUserRepository.js"
 import MongoVehicleRepository from "#app/repositories/mongo/MongoVehicleRepository.js"
 import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
-import SMS from "./utils/external/sms"
 import MongoFenceAreaRepository from "#app/repositories/mongo/MongoFenceAreaRepository.js"
 
 

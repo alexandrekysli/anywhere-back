@@ -11,27 +11,15 @@ class AddNewPairingEvent {
     constructor(private adlogs: Adlogs, private repository: IPairingEventRepository){}
 
     public execute = async (pairingID: string, eventMessage: TrackerMessage, fenceValue: TrackData['fence_value']): Promise<TrackData | null> => {
-        let err = ''
-
+        let err = ''        
         if(eventMessage.state){
             // -> Retrieve last pairing event
             const lastPosition = await this.repository.getLastPairingEvent(pairingID)
-
             if(lastPosition.err) err = lastPosition.err || ''
             else{                
                 if(eventMessage.state.gps && eventMessage.state.gps.speed){
                     // -> With coordinates 
-                    const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(eventMessage.state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 10
-                    //const orientation = lastPosition.data ? (lastPosition.data.orientation - eventMessage.state.gps.orientation) : 1
-
-                    // -> DBG
-                    /* console.log('---');
-                    console.log(eventMessage.state.gps.coordinates);
-                    console.log(lastPosition.data?.localisation.gps);
-                    console.log(distance);
-                    console.log(eventMessage.state.gps.speed);
-                    console.log('^^^'); */
-                    
+                    const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(eventMessage.state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 15                    
                     if(distance >= 15){
                         console.log(`new position with distance -> ${distance}`)
                         const entity = new PairingEventEntity(
@@ -52,27 +40,7 @@ class AddNewPairingEvent {
                             pairingID
                         )
                         return await this.customSave(entity)
-                    }/* else if(Math.abs(orientation) > 45){
-                        console.log(`new position with orientation -> ${orientation}`)
-                        const entity = new PairingEventEntity(
-                            Date.now(),
-                            eventMessage.event,
-                            eventMessage.event === 'state',
-                            { gps: eventMessage.state.gps.coordinates, location: '' },
-                            eventMessage.state.gps.orientation,
-                            eventMessage.state.gps.speed,
-                            eventMessage.state.gps.altitude,
-                            eventMessage.state.gps.odometer,
-                            eventMessage.state.device.battery,
-                            eventMessage.state.device.network.signal,
-                            lastPosition.data ? lastPosition.data.fence : '',
-                            eventMessage.state.io.acc,
-                            eventMessage.state.io.relay,
-                            eventMessage.state.io.buzzer,
-                            pairingID
-                        )
-                        return await this.customSave(entity)
-                    } */
+                    }
                 }else{
                     // -> Without coordinates
                     if(lastPosition.data && eventMessage.event !== 'state'){
@@ -88,7 +56,7 @@ class AddNewPairingEvent {
                             lastPosition.data.odometer,
                             eventMessage.state.device.battery,
                             eventMessage.state.device.network.signal,
-                            lastPosition.data.fence,
+                            fenceValue,
                             eventMessage.state.io.acc,
                             eventMessage.state.io.relay,
                             eventMessage.state.io.buzzer,

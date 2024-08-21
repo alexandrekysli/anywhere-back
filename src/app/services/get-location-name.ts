@@ -20,8 +20,6 @@ class GetLocationName {
                 let location = pairingEventOfLocation && pairingEventOfLocation.localisation.location || ''
                 
                 if(location === ''){
-                    console.log('-- web');
-                    
                     const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${pairingEvent.data.localisation.gps.lat},${pairingEvent.data.localisation.gps.lng}&key=${engineConfig.infrastructure.api_key.google}`)
                     if(response.ok){
                         const data = await response.json() as GoogleReverseGeocodeResponse

@@ -27,7 +27,7 @@ type PairingData = {
         max_speed: number,
         fence: Coordinates[]
     },
-    subscription: {
+    subscription?: {
         package: string,
         allowed_option: string[],
         state: 'wait' | 'actual' | 'end' | 'suspend',
@@ -62,10 +62,10 @@ class GetPairingTrack {
             const customer = vehicle.customer as UserEntity
             const manager = (await this.userRepository.getUserByID(customer.manager.toString())).data as UserEntity
 
-            const subscription = ((await this.subscriptionRepository.getSubscriptionByVehicle(vehicle.id || '')).data || []).filter(x => {
+            const subscription = ((await this.subscriptionRepository.getSubscriptionByVehicle(vehicle.id || '')).data || []).filter(x => {        
                 if(x.status && x.status() === 'actual') return true
             })[0]
-
+                        
             return {
                 pairing: {
                     id: String(pairing.id),
@@ -90,12 +90,12 @@ class GetPairingTrack {
                     imei: tracker.imei,
                     model: tracker.brand + ' ' + tracker.model
                 },
-                subscription: {
+                subscription: subscription ? {
                     package: subscription._package instanceof PackageEntity ? subscription._package.name : '#',
                     allowed_option: subscription._package instanceof PackageEntity ? subscription._package.allowed_option : [],
                     state: subscription.status ? subscription.status() : 'end',
                     end_date: subscription.endDate ? subscription.endDate() : 0
-                },
+                } : undefined,
                 customer: { id: String(customer.id), name: customer.surname + ' ' + customer.name },
                 manager: { id: String(manager.id), name: manager.surname + ' ' + manager.name }
             }

@@ -56,15 +56,13 @@ class TripMaker {
                     if(tripItem.stop_duration > this.tripLimit.max_stop_duration){
                         // -> Trip is end
                         clearInterval(tripItem.interval)
-                        console.log('Trip is end !');
-                        console.log(tripItem)
+                        console.log('Trip is end !')
                         if(tripItem.move_duration > this.tripLimit.min_move_duration){
                             const totalMileage = tripItem.events[tripItem.events.length -1].odometer - tripItem.events[0].odometer
                             console.log('total mileage -> ' + totalMileage)
                             if(totalMileage >= this.tripLimit.min_move_mileage){
                                 // -> Save trip
                                 const result = await this.services.addNewPairingTrip.execute(tripItem.pairing, tripItem.events.map(x => x.id || ''))
-                                console.log(result)
                                 console.log('new trip save ✅');
                                 this.pairingTripItem.splice(tripIndex, 1)
                             }else{

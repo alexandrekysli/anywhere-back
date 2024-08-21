@@ -217,7 +217,8 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
     async getSubscriptionByVehicle(vehicle: string): Promise<{ data?: SubscriptionEntity[]; err?: string }> {
         const subscriptionList = []
         try {
-            const result = (await this.collection.find({ vehicle: [vehicle] }).toArray())
+            const result = (await this.collection.find({ vehicle: vehicle }).toArray())
+            
             for (const subscription of result) {
                 // -> Retrieve dependency
                 const customer = await this.userRepository.getUserByID(subscription.customer.toString())
