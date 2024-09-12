@@ -1,7 +1,7 @@
-import IOriginRepository from "./IOriginRepository"
+import IOriginRepository from "../interfaces/IOriginRepository"
 
 import { MongoClient, MongoError, ObjectId } from "mongodb"
-import OriginEntity from "../entities/origin"
+import OriginEntity from "../../entities/origin"
 
 interface OriginCollection {
     ip: string,
@@ -131,6 +131,15 @@ class OriginRepository implements IOriginRepository {
             return { data: origin, err: '' }
         } catch (error) {            
             return { data: null, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async removeCallerOriginByIdentifier(callerIdentifier: string, originIdentifier: string): Promise<boolean | Error> {
+        try {
+            const result = await this.collection.deleteOne({ identifier: originIdentifier, caller: callerIdentifier }) 
+            return Boolean(result.deletedCount)
+        } catch (error) {            
+            return error instanceof MongoError ? error : Error()
         }
     }
 

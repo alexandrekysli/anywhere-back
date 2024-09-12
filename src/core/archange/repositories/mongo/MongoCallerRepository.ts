@@ -1,8 +1,8 @@
 import Utils from "#utils/index.js"
-import ICallerRepository from "./ICallerRepository"
-import CallerEntity from "../entities/caller"
 
 import { MongoClient, MongoError } from "mongodb"
+import ICallerRepository from "../interfaces/ICallerRepository"
+import CallerEntity from "#core/archange/entities/caller.js"
 
 interface CallerCollection { identifier: string, type: 'ip' | 'known' | 'user' }
 

@@ -1,7 +1,7 @@
 import Utils from "#utils/index.js"
-import ArchangeGroupEntity from "../entities/group"
-import ArchangeUserEntity from "../entities/user"
-import IArchangeUserRepository from "./IUserRepository"
+import ArchangeGroupEntity from "../../entities/group"
+import ArchangeUserEntity from "../../entities/user"
+import IArchangeUserRepository from "../interfaces/IUserRepository"
 
 import { MongoClient, MongoError, ObjectId } from "mongodb"
 

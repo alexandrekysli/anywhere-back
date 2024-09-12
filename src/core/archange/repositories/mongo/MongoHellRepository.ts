@@ -1,7 +1,7 @@
 import Utils from "#utils/index.js"
 
-import IRepository from "./IHellRepository"
-import HellItemEntity from "../entities/hell"
+import IRepository from "../interfaces/IHellRepository"
+import HellItemEntity from "../../entities/hell"
 
 import { MongoClient, MongoError, ObjectId } from "mongodb"
 

@@ -174,7 +174,7 @@ class iStartekTrackerDevice implements ITrackerDevice {
                 if(trackerTWS.state.length === 2) trackerTWS.state.shift()
                 trackerTWS.state.push({ powered: message.status.powered, relay: message.output[0], buzzer: message.output[1] })
 
-                if(trackerTWS.state[0].powered !== trackerTWS.state[1].powered){
+                if(false && trackerTWS.state[0].powered !== trackerTWS.state[1].powered){
                     // -> Powered state change
                     eventName = trackerTWS.state[0].powered ? 'unpowered' : 'powered'
                 }else if(trackerTWS.state[0].relay !== trackerTWS.state[1].relay){
@@ -236,6 +236,15 @@ class iStartekTrackerDevice implements ITrackerDevice {
                     const index = this.commandStack.findIndex(x => x.imei === eventData.imei)
                     if(index !== -1) socket.write(this.encodeMessage(eventData.imei, eventData.no, this.commandStack[index].code, this.commandStack[index].cmd))
                 }
+            })
+
+            socket.on('error', (err) => {
+                this.adlogs.writeRuntimeEvent({
+                    category: 'app',
+                    type: 'warning',
+                    message: `critical error for incoming socket < ${err.message} >`,
+                    save: true
+                })
             })
         })
 

@@ -10,6 +10,8 @@ import { MongoClient } from "mongodb"
 import Utils from "#utils/index.js"
 import AddNewUserAccount from "#app/services/add-new-user.js"
 import UpdateUserAuth from "#app/services/update-user-auth.js"
+import CheckUserAccountRecoveryEmail from "#app/services/check-user-account-recovery-email.js"
+import RecoveryUserAccount from "#app/services/recovery-user-account.js"
 
 /** TS */
 interface LoginRequest extends ExpressFractalRequest {
@@ -39,13 +41,25 @@ interface EditAccountAuthRequest extends ExpressFractalRequest {
         }
     }
 }
+interface CheckAccountRecoveryRequest extends ExpressFractalRequest {
+    body: { email: string }
+}
+interface MakeAccountRecoveryRequest extends ExpressFractalRequest {
+    body: { email: string, pinHash: string }
+}
 
 export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) => {
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
-    const loginUser = new LoginUser(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
-    const dataUser = new GetUser(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
-    const addNewUserAccount = new AddNewUserAccount(adlogs, archange, new MongoUserRepository(mongoClient, 'anywhere'))
-    const updateUserAuth = new UpdateUserAuth(adlogs, new MongoUserRepository(mongoClient, 'anywhere'))
+    /** ### Load Repositories ### */
+    const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
+
+    /** ### Load Services ### */
+    const loginUser = new LoginUser(adlogs, archange, userRepository)
+    const dataUser = new GetUser(adlogs, archange, userRepository)
+    const addNewUserAccount = new AddNewUserAccount(adlogs, archange, userRepository)
+    const updateUserAuth = new UpdateUserAuth(adlogs, userRepository)
+    const checkUserAccountRecoveryEmail = new CheckUserAccountRecoveryEmail(adlogs, userRepository)
+    const recoveryUserAccount = new RecoveryUserAccount(adlogs, userRepository)
 
     /** ### Router dispatching ### */
 
@@ -59,6 +73,9 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
                 if(loginResult.pass){
                     req.session.archange_hash = loginResult.linkHash
+                    
+                    // -> Login completed -> remove origin from old caller
+                    archange.removeOriginFromCaller(String(req.session.heaven_kf), String(req.session.archange_caller_origin))
                     
                     adlogs.writeRuntimeEvent({
                         category: 'app',
@@ -115,6 +132,24 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     router.post('/edit-auth', async(req: EditAccountAuthRequest, res) => {
         const updatedAuth = await updateUserAuth.execute(req.body.pass_hash, req.body.data.type, req.body.data.list)
         res.json(Utils.makeHeavenResponse(res, updatedAuth))
+    })
+
+    // -> Account recovery request
+    router.post('/check-account-recovery', async(req: CheckAccountRecoveryRequest, res) => {
+        const checkResult = await checkUserAccountRecoveryEmail.execute(req.body.email)
+        res.json(Utils.makeHeavenResponse(res, checkResult))
+    })
+
+    // -> Account recovery process
+    router.post('/make-account-recovery', async(req: MakeAccountRecoveryRequest, res) => {
+        const actualPinHash = archange.getCallerActualOTPPinHash(req.session.archange_hash || req.session.heaven_kf || '')
+        if(actualPinHash === req.body.pinHash){
+            const makeResult = await recoveryUserAccount.execute(req.body.email)
+            archange.updateCallerActualOTPPinHash((req.session.archange_hash || req.session.heaven_kf || ''), '')
+            res.json(Utils.makeHeavenResponse(res, makeResult))
+        }else res.json(Utils.makeHeavenResponse(res, { pass: false, err: 'Code PIN OTP incorrect !' }))
+
+        
     })
 
     return router

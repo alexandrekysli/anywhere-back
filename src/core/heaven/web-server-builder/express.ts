@@ -17,7 +17,8 @@ import MongoStore from "connect-mongo"
 declare module 'express-session' {
     interface SessionData {
         heaven_kf: string,
-        archange_hash: string
+        archange_hash: string,
+        archange_caller_origin: string,
     }
 }
 

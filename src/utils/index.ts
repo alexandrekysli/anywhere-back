@@ -34,7 +34,7 @@ class Utils {
     }
 
     /** Generated random string equal to defined length */
-    static genString = (length: number, full: boolean, number: boolean) => {
+    static genString = (length: number, full = false, number= false) => {
         let allCar = ''
         let randomString = ''
 
@@ -189,6 +189,23 @@ class Utils {
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2)
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) 
         return earthRadiusKm * c
+    }
+
+    static obscurifyPhoneNumber = (number: string, showedPart: number) => {
+        let phoneNumberZip = number.split(' ')[0]
+        const numberWithoutZip = number.replace(phoneNumberZip, '')
+        const unespacedNumberWithoutZip = number.replace(phoneNumberZip, ' ').replace(/ /g, '')
+    
+        let phone = ''
+        let noSpaceCharacterCount = 0
+        for (let i = 0; i < numberWithoutZip.length; i++) {
+            const character = numberWithoutZip.charAt(i)
+            if(character !== ' '){
+                phone += (noSpaceCharacterCount > showedPart - 1 && (unespacedNumberWithoutZip.length - noSpaceCharacterCount > showedPart) ? '*' : character)
+                noSpaceCharacterCount++
+            }else phone += ' '
+        }
+        return phoneNumberZip + phone
     }
 }
 

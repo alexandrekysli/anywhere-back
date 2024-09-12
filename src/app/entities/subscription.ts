@@ -1,4 +1,3 @@
-import Utils from "#utils/index.js"
 import PackageEntity from "./package"
 import UserEntity from "./user"
 import VehicleEntity from "./vehicle"

@@ -20,7 +20,7 @@ class AddNewPairingEvent {
                 if(eventMessage.state.gps && eventMessage.state.gps.speed){
                     // -> With coordinates 
                     const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(eventMessage.state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 15                    
-                    if(distance >= 15){
+                    if(distance >= /* 15 */ 40){
                         console.log(`new position with distance -> ${distance}`)
                         const entity = new PairingEventEntity(
                             Date.now(),

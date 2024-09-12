@@ -3,9 +3,9 @@ import Utils from "#utils/index.js"
 import CallerEntity from "./entities/caller"
 import OriginEntity from "./entities/origin"
 import HellItemEntity from "./entities/hell"
-import HellRepository from "./repositories/IHellRepository"
-import CallerRepository from "./repositories/ICallerRepository"
-import OriginRepository from "./repositories/IOriginRepository"
+import HellRepository from "./repositories/interfaces/IHellRepository"
+import CallerRepository from "./repositories/interfaces/ICallerRepository"
+import OriginRepository from "./repositories/interfaces/IOriginRepository"
 import { ConfigType } from "../../config"
 
 /** TS */
@@ -19,15 +19,21 @@ type OriginLastActivitySavingTimeout = { identifier: string, timeout: NodeJS.Tim
  */
 
 class ArchangeCaller {
-    public caller: CallerEntity | null = null
-    public hellItem: HellItemEntity | null = null
     private requestCount = 0
-    public tokenBucket = 0
     private timestampBucket = 0
     private dosPerHourBegin = 0
     private dosPerHourCount = 0
     private originLastActivitySavingTimeoutList: OriginLastActivitySavingTimeout[] = []
 
+    public otpPerDayLimit = 0
+    public usedPerDayOTP = 0
+    public nextOTPRefullDate = 0
+    public OTPActualPinHash = ''
+    
+    public tokenBucket = 0
+    public caller: CallerEntity | null = null
+    public hellItem: HellItemEntity | null = null
+    
     constructor(
         private adlogs: Adlogs,
         private archangeConfig: ConfigType['infrastructure']['archange'],
@@ -68,6 +74,9 @@ class ArchangeCaller {
                 })
             }
         }
+
+        // -> OTP specific
+        this.otpPerDayLimit = this.archangeConfig.otp.limit[callerType]
 
         // -> Retrieve caller hell state
         const inDBhellItem = await this.hellRepository.getItem(this.caller?.identifier || '')

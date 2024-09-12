@@ -1,15 +1,15 @@
+import MongoUserRepository from "#app/repositories/mongo/MongoUserRepository.js"
+import MakeOTPRequest from "#app/services/make-otp-request.js"
 import Adlogs from "#core/adlogs/index.js"
 import Archange from "#core/archange/index.js"
 
-import { HeavenExpressRouter } from "#core/heaven/routers.js"
+import { ExpressFractalRequest, HeavenExpressRouter } from "#core/heaven/routers.js"
+import Utils from "#utils/index.js"
 import { MongoClient } from "mongodb"
 
 /** TS */
-type OTPRequestItem = {
-    caller: string,
-    remaining: number,
-    actualValue: string
-}
+interface OTPMakeRequest extends ExpressFractalRequest { body: { email: string } }
+interface OTPCheckRequest extends ExpressFractalRequest { body: { pin: string } }
 
 /**
  * # Heaven route
@@ -20,32 +20,45 @@ type OTPRequestItem = {
 
 export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) => {
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
-    const otpRequestList: OTPRequestItem[] = []
+    
+    /** ### Load Repositories ### */
+    const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
+    /** ### Load Services ### */
+    const makeOTPRequest = new MakeOTPRequest(adlogs, userRepository)
+
+    /** ### Router specific ### */
+    const otpList: { email: string, pin: string, hash: string }[] = []
 
     /** ### Router dispatching ### */
-    router.get('/make', async(req, res) => {
-        setTimeout(() => {
-            res.json({
-                archange: { pass: true, token_bucket: res.locals.caller.remain_token },
-                data: {
-                    permitted: true,
-                    length: 5,
-                    remaining_attempt: 3,
-                    resend_in: 10,
-                    phone: '+225 070* *** *750'
-                }
-            })
-        }, 1000)
+    router.post('/make', async(req: OTPMakeRequest, res) => {
+        const availability = archange.checkCallerOTPAvailability(req.session.archange_hash || req.session.heaven_kf || '')
+        if(availability instanceof Error){
+            res.json(Utils.makeHeavenResponse(res, { pass: false, err: availability.message }))
+        }else{
+            const result = await makeOTPRequest.execute(req.body.email, otpList.map(x => x.pin))
+            if(!result) res.json(Utils.makeHeavenResponse(res, { pass: true, err: 'unavailable' })) 
+            else{
+                const pinHash = Utils.genString(10)
+                const otp = otpList.filter(x => x.email === req.body.email)[0]
+                if(otp) otp.pin = result.pin
+                else otpList.push({ email: req.body.email, pin: result.pin, hash: pinHash})
+
+                res.json(Utils.makeHeavenResponse(res, { pass: true, otp: {
+                    length: result.pin.length, phone: result.phone 
+                }, err: '' }))
+            }
+        }
     })
 
-    router.get('/check', async(req, res) => {
-        const pass = req.query.code === 'KOFFI'
-        res.json({
-            archange: { pass: true, token_bucket: res.locals.caller.remain_token },
-            data: {
-                pass: pass
-            }
-        })
+    router.post('/check', async(req: OTPCheckRequest, res) => {
+        const pinIndex = otpList.findIndex(x => x.pin === req.body.pin)
+        if(pinIndex === -1) res.json(Utils.makeHeavenResponse(res, { pass: false, pinHash: '' }))
+        else{
+            const pinHash = otpList[pinIndex].hash
+            otpList.splice(pinIndex, 1)
+            archange.updateCallerActualOTPPinHash((req.session.archange_hash || req.session.heaven_kf || ''), pinHash)
+            res.json(Utils.makeHeavenResponse(res, { pass: true, pinHash: pinHash }))
+        }
     })
 
     return router

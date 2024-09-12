@@ -1,4 +1,4 @@
-import HellItemEntity from "../entities/hell"
+import HellItemEntity from "../../entities/hell"
 
 interface IRepository {
     getItem(identity: string) : Promise<{ data: HellItemEntity | null, err: string }>

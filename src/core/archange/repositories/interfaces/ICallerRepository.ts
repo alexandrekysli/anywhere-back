@@ -1,4 +1,4 @@
-import CallerEntity from "../entities/caller"
+import CallerEntity from "../../entities/caller"
 
 interface ICallerRepository {
     getCallerByIdentifier(identifier: string): Promise<{ data: CallerEntity | null, err: string }>

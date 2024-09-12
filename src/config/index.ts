@@ -117,6 +117,13 @@ const Config = {
                 max_dos_per_hour: 5,
                 delayed_time: 5 * 60 * 1000,
                 dos_ban_time: 1 * 3600 * 1000
+            },
+            otp: {
+                limit: {
+                    ip: 1,
+                    known: 3,
+                    user: 5
+                }
             }
         },
         tracking_bot: {

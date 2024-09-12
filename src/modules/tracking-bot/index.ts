@@ -187,6 +187,9 @@ class TrackingBot {
                         this.io.emit('track-ping', {
                             id: pairing.id || '',
                             date: nowTime,
+                            powered: data.state.device.battery.powered,
+                            network_signal: data.state.device.network.signal,
+                            gps: data.state.gps !== undefined,
                             io: { relay: data.state.io.relay, buzzer: data.state.io.buzzer}
                         })
 

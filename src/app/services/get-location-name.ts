@@ -23,7 +23,8 @@ class GetLocationName {
                     const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${pairingEvent.data.localisation.gps.lat},${pairingEvent.data.localisation.gps.lng}&key=${engineConfig.infrastructure.api_key.google}`)
                     if(response.ok){
                         const data = await response.json() as GoogleReverseGeocodeResponse
-                        location = data.results.filter(x => x.types.includes('sublocality'))[0].formatted_address || ''
+                        const place = data.results.filter(x => x.types.filter(x => ['locality', 'sublocality', 'route'].includes(x)).length)[0]
+                        location = place && place.formatted_address || ''
                     }
                 }
 

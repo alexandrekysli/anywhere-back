@@ -7,11 +7,10 @@ import ArchangeCaller from "./caller"
 
 import { Request, Response, NextFunction } from "express"
 import uap from "ua-parser-js"
-import HellRepository from "./repositories/IHellRepository"
-import CallerRepository from "./repositories/ICallerRepository"
-import OriginRepository from "./repositories/IOriginRepository"
-import IArchangeUserRepository from "./repositories/IUserRepository"
-import MongoArchangeUserRepository from "./repositories/IUserRepository"
+import HellRepository from "./repositories/interfaces/IHellRepository"
+import CallerRepository from "./repositories/interfaces/ICallerRepository"
+import OriginRepository from "./repositories/interfaces/IOriginRepository"
+import IArchangeUserRepository from "./repositories/interfaces/IUserRepository"
 
 /** TS */
 type RequestOrigin = {
@@ -117,7 +116,7 @@ class Archange {
                     await activeCaller.exitCallerFromHell()
                 }
             }
-            
+
             if(!activeCaller.hellItem || activeCaller.hellItem.mode === 'delayed'){
                 // -> Retrieve caller origin
                 let originIndex = activeCaller.caller.originList.findIndex(x => x.identifier === origin.hash)
@@ -168,6 +167,9 @@ class Archange {
         const origin = this.getExpressRequestOrigin(req)
         if(origin.type === 'ip') req.session.heaven_kf = randomUUID()
         
+        // -> Save origin identifier on session
+        req.session.archange_caller_origin = origin.hash
+        
         const result = await this.archangeRequestAnalyser(origin)
         res.locals.archange_check = result
         if(result.hell){
@@ -212,6 +214,36 @@ class Archange {
         }
     }
 
+    public checkCallerOTPAvailability = (identifier: string): true | Error => {
+        const caller = this.activeCallerList.filter(x => x.caller?.identifier === identifier)[0]
+        if(caller){
+            if(caller.usedPerDayOTP < caller.otpPerDayLimit){
+                caller.usedPerDayOTP++
+                if(caller.usedPerDayOTP === caller.otpPerDayLimit) caller.nextOTPRefullDate = Date.now() + 86400000
+
+                return true
+            }else{
+                if(Date.now() > caller.nextOTPRefullDate){
+                    caller.nextOTPRefullDate = 0
+                    caller.usedPerDayOTP = 1
+
+                    return true
+                }else return new Error('empty')
+            }            
+        }
+        return new Error('no_found')
+    }
+
+    public getCallerActualOTPPinHash = (identifier: string) => {
+        const caller = this.activeCallerList.filter(x => x.caller?.identifier === identifier)[0]
+        return caller ? caller.OTPActualPinHash : false
+    }
+
+    public updateCallerActualOTPPinHash = (identifier: string, pin: string) => {
+        const caller = this.activeCallerList.filter(x => x.caller?.identifier === identifier)[0]
+        if(caller) caller.OTPActualPinHash = pin
+    }
+
     public addArchangeUser = async (master_id: string, group: string) => {
         const user = await this.userRepository.addUser(Utils.makeSHA256(`4C#${master_id}@`), group)
         if(user.data !== undefined){
@@ -224,6 +256,19 @@ class Archange {
             })
             return null
         }
+    }
+
+    public removeOriginFromCaller = async (callerID: string, originID: string) => {
+        const caller = this.activeCallerList.filter(x => x.caller?.identifier === callerID)[0]
+        if(caller && caller.caller){
+            const callerOriginIndex = caller.caller.originList.findIndex(x => x.identifier === originID)
+            if(callerOriginIndex !== -1){
+                const result = await this.originRepository.removeCallerOriginByIdentifier(callerID, originID)
+                if(!(result instanceof Error)){
+                    caller.caller.originList.splice(callerOriginIndex, 1)
+                }
+            }
+        }        
     }
 
     public removeArchangeUserByMasterID = async (master_id: string) => {

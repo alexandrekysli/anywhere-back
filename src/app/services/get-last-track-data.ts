@@ -34,7 +34,7 @@ class GetLastTrackData {
                 orientation: lastEvent.orientation,
                 fence_value: lastEvent.fence,
                 odometer: lastEvent.odometer,
-                device: { battery: lastEvent.battery, network: { signal: lastEvent.network_level }},
+                device: { battery: lastEvent.battery, network: { signal: lastEvent.network_level } },
                 io: {
                     acc: lastEvent.acc,
                     buzzer: lastEvent.buzzer,
