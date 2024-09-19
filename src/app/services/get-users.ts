@@ -13,8 +13,7 @@ type UserData = {
     auth: { tfa: boolean, modification_date: number },
     type: string,
     godfather: string,
-    manager: string,
-    access: { name: string, description: string }[]
+    manager: string
 }
 
 class GetUser {
@@ -25,7 +24,7 @@ class GetUser {
         if(user.data){
             const customerType = ['particular', 'corporate']
             const archangeUser =  await this.archange.getArchangeUserByMasterID(user.data.master_id, customerType.includes(user.data.type) ? 'customer' : user.data.type)
-            if(archangeUser && archangeUser.group){
+            if(archangeUser){
                 return {
                     id: user.data.id || '',
                     name: user.data.surname + ' ' + user.data.name,
@@ -35,7 +34,6 @@ class GetUser {
                     adding_date: user.data.adding_date,
                     godfather: user.data.godfather instanceof UserEntity ? user.data.godfather.surname + ' ' + user.data.godfather.name : user.data.godfather,
                     manager: user.data.manager instanceof UserEntity ? user.data.manager.surname + ' ' + user.data.manager.name : user.data.manager,
-                    access: archangeUser.group.access || [],
                     auth: { tfa: user.data.auth.tfa_state, modification_date: user.data.auth.modification_date }
                 }
             }else return null

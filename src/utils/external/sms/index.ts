@@ -94,6 +94,11 @@ class SMS {
             return false
         }else return true
     }
+
+    public demo = async () => {
+        const p = await this.middleware.sendSMS({ to: '+225 07 08 49 12 75', message: 'salut mec !' })
+        console.log(p)
+    }
 }
 
 export default SMS

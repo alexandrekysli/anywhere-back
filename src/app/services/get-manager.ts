@@ -40,13 +40,15 @@ class GetManager {
             }else err = godfather.err || ''
         }else err = manager.err || ''
 
-        // -> Write error
-        this.adlogs.writeRuntimeEvent({
-            category: 'app',
-            type: 'stop',
-            message: `unable to use db < ${err} >`,
-            save: true
-        })
+        if(err){
+            // -> Write error
+            this.adlogs.writeRuntimeEvent({
+                category: 'app',
+                type: 'stop',
+                message: `unable to use db < ${err} >`,
+                save: true
+            })
+        }
         return null
     }
 }

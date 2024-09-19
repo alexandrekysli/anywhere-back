@@ -195,7 +195,11 @@ class TrackingBot {
 
                         // -> Dynamic alert check
                         // -> Speeding
-                        if(data.state.gps && data.state.gps.speed > vehicle.max_speed) data.event === 'speeding'
+                        if(
+                            subscription._package.allowed_option.includes('Survitesse') &&
+                            data.state.gps && 
+                            data.state.gps.speed > vehicle.max_speed
+                        ) data.event === 'speeding'
                         
                         // -> GeoFence
                         let fenceValue: TrackData['fence_value'] = ''

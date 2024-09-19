@@ -25,7 +25,7 @@ class AddNewPairingEvent {
                         const entity = new PairingEventEntity(
                             Date.now(),
                             eventMessage.event,
-                            eventMessage.event === 'state',
+                            eventMessage.event === eventMessage.event,
                             { gps: eventMessage.state.gps.coordinates, location: '' },
                             eventMessage.state.gps.orientation,
                             eventMessage.state.gps.speed,

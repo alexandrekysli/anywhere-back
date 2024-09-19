@@ -30,19 +30,39 @@ import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscripti
 import MongoFenceAreaRepository from "#app/repositories/mongo/MongoFenceAreaRepository.js"
 
 
-/* ### -> App initialisation ### */ 
+/* ### -> App initialisation ### */
+
+// -> ### Core critical
 const adlogs = new Adlogs()
-const heaven = new Heaven(adlogs, engineConfig)
 const mongoBase = new MongoBase(adlogs, engineConfig.infrastructure.database.mongo)
+
+// -> ### Repositories
+const archangeCallerRepository = new MongoCallerRepository(mongoBase.client, 'anywhere')
+const archangeOriginRepository = new MongoOriginRepository(mongoBase.client, 'anywhere')
+const archangeHellRepository = new MongoHellRepository(mongoBase.client, 'anywhere')
+const archangeUserRepository = new MongoArchangeUserRepository(mongoBase.client, 'anywhere')
+const appUserRepository = new MongoUserRepository(mongoBase.client, 'anywhere')
+const appVehicleRepository = new MongoVehicleRepository(mongoBase.client, 'anywhere')
+const appSubscriptionRepository = new MongoSubscriptionRepository(mongoBase.client, 'anywhere')
+const appTrackerRepository = new MongoTrackerRepository(mongoBase.client, 'anywhere')
+const appPairingRepository = new MongoPairingRepository(mongoBase.client, 'anywhere')
+const appPairingEventRepository = new MongoPairingEventRepository(mongoBase.client, 'anywhere')
+const appPairingTripRepository = new MongoPairingTripRepository(mongoBase.client, 'anywhere')
+const appFenceAreaRepository = new MongoFenceAreaRepository(mongoBase.client, 'anywhere')
+
+// -> ### Core
+const heaven = new Heaven(adlogs, engineConfig)
 const archange = new Archange(
     adlogs,
     engineConfig.infrastructure.archange,
-    new MongoCallerRepository(mongoBase.client, 'anywhere'),
-    new MongoOriginRepository(mongoBase.client, 'anywhere'),
-    new MongoHellRepository(mongoBase.client, 'anywhere'),
-    new MongoArchangeUserRepository(mongoBase.client, 'anywhere')
+    archangeCallerRepository,
+    archangeOriginRepository,
+    archangeHellRepository,
+    archangeUserRepository,
+    appUserRepository
 )
 
+// -> ### Application
 adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting' })
 adlogs.setRepo(new MongoAdlogsRepository(mongoBase.client, 'anywhere'))
 
@@ -69,14 +89,14 @@ if(engineConfig.error){
             engineConfig,
             adlogs,
             heaven.webLink,
-            new MongoUserRepository(mongoBase.client, 'anywhere'),
-            new MongoVehicleRepository(mongoBase.client, 'anywhere'),
-            new MongoSubscriptionRepository(mongoBase.client, 'anywhere'),
-            new MongoTrackerRepository(mongoBase.client, 'anywhere'),
-            new MongoPairingRepository(mongoBase.client, 'anywhere'),
-            new MongoPairingEventRepository(mongoBase.client, 'anywhere'),
-            new MongoPairingTripRepository(mongoBase.client, 'anywhere'),
-            new MongoFenceAreaRepository(mongoBase.client, 'anywhere')
+            appUserRepository,
+            appVehicleRepository,
+            appSubscriptionRepository,
+            appTrackerRepository,
+            appPairingRepository,
+            appPairingEventRepository,
+            appPairingTripRepository,
+            appFenceAreaRepository
         )
 
         adlogs.listenRuntimeEventMessage(succesRunMessage, () => {

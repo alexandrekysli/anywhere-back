@@ -8,6 +8,9 @@ import CallerRepository from "./repositories/interfaces/ICallerRepository"
 import OriginRepository from "./repositories/interfaces/IOriginRepository"
 import { ConfigType } from "../../config"
 
+import UserEntity from "#app/entities/user.js"
+import IUserRepository from "#app/repositories/IUserRepository.js"
+
 /** TS */
 type OriginLastActivitySavingTimeout = { identifier: string, timeout: NodeJS.Timeout | undefined }
 
@@ -28,10 +31,11 @@ class ArchangeCaller {
     public otpPerDayLimit = 0
     public usedPerDayOTP = 0
     public nextOTPRefullDate = 0
-    public OTPActualPinHash = ''
+    public OTPActualPinHash: string | false = false
     
     public tokenBucket = 0
     public caller: CallerEntity | null = null
+    public appAccount?: UserEntity
     public hellItem: HellItemEntity | null = null
     
     constructor(
@@ -39,7 +43,8 @@ class ArchangeCaller {
         private archangeConfig: ConfigType['infrastructure']['archange'],
         private callerRepository: CallerRepository,
         private originRepository: OriginRepository,
-        private hellRepository: HellRepository,    
+        private hellRepository: HellRepository,
+        private appUserRepository: IUserRepository
     ){}
 
     /**
@@ -49,13 +54,14 @@ class ArchangeCaller {
      */
 
     /** Archange Caller initialisation */
-    init = async (callerType: 'ip' | 'known' | 'user', callerIdentity: string) => {
+    init = async (callerType: 'ip' | 'known' | 'user', callerIdentity: string, archangeHash: string) => {
+        let pass = true
         // -> Load Caller from
         const inDBCaller = await this.callerRepository.getCallerByIdentifier(callerIdentity)
         if(inDBCaller.data){
             this.caller = inDBCaller.data
-            this.tokenBucket = this.archangeConfig.bucket.limit[this.caller.type]
         }else if (inDBCaller.err){
+            pass = false
             this.adlogs.writeRuntimeEvent({
                 category: 'archange',
                 type: 'stop',
@@ -67,6 +73,7 @@ class ArchangeCaller {
             if(saveResult.data){
                 this.caller = saveResult.data
             }else{
+                pass = false
                 this.adlogs.writeRuntimeEvent({
                     category: 'archange',
                     type: 'stop',
@@ -75,26 +82,35 @@ class ArchangeCaller {
             }
         }
 
-        // -> OTP specific
-        this.otpPerDayLimit = this.archangeConfig.otp.limit[callerType]
+        if(pass && this.caller){
+            this.tokenBucket = this.archangeConfig.bucket.limit[this.caller.type]
 
-        // -> Retrieve caller hell state
-        const inDBhellItem = await this.hellRepository.getItem(this.caller?.identifier || '')
-        
-        if(inDBhellItem.err === '') {
-            this.hellItem = inDBhellItem.data
-        }else{
-            this.adlogs.writeRuntimeEvent({
-                category: 'archange',
-                type: 'stop',
-                message: `unable to retrieve caller hell state in db < ${inDBCaller.err} >`, save: true
-            })
+            // -> Save appAccount is user type
+            if(callerType === 'user'){
+                this.appAccount =  (await this.appUserRepository.getUserByArchangeLinkHash(archangeHash)).data
+            }
+            
+            // -> OTP specific
+            this.otpPerDayLimit = this.archangeConfig.otp.limit[callerType]
+
+            // -> Retrieve caller hell state
+            const inDBhellItem = await this.hellRepository.getItem(this.caller?.identifier || '')
+            
+            if(inDBhellItem.err === '') {
+                this.hellItem = inDBhellItem.data
+            }else{
+                this.adlogs.writeRuntimeEvent({
+                    category: 'archange',
+                    type: 'stop',
+                    message: `unable to retrieve caller hell state in db < ${inDBCaller.err} >`, save: true
+                })
+            }
+
+            // -> Load Caller Origin
+            const callerOrigin = await this.originRepository.getOriginByCaller(this.caller?.identifier || '')
+            
+            this.caller && (this.caller.originList = callerOrigin.data || [])
         }
-
-        // -> Load Caller Origin
-        const callerOrigin = await this.originRepository.getOriginByCaller(this.caller?.identifier || '')
-        
-        this.caller && (this.caller.originList = callerOrigin.data || [])
     }
 
 

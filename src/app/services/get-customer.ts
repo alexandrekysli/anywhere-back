@@ -46,13 +46,15 @@ class GetCustomer {
             }else err = godfather.err || manager.err || activeSubscription.err || ''
         }else err = customer.err || ''
 
-        // -> Write error
-        this.adlogs.writeRuntimeEvent({
-            category: 'app',
-            type: 'stop',
-            message: `unable to use db < ${err} >`,
-            save: true
-        })
+        if(err){
+            // -> Write error
+            this.adlogs.writeRuntimeEvent({
+                category: 'app',
+                type: 'stop',
+                message: `unable to use db < ${err} >`,
+                save: true
+            })
+        }
         return null
     }
 }

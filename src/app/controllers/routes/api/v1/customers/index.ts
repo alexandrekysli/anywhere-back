@@ -51,7 +51,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     /** ### Router dispatching ### */
 
     router.get('/get-all', async(req, res) => {
-        const customerList = await getCustomerList.execute()
+        const customerList = await getCustomerList.execute(undefined, req.session.archange_hash)
         res.json(Utils.makeHeavenResponse(res, {
             list: customerList || []
         } ))

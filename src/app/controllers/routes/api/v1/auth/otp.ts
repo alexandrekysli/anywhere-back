@@ -42,6 +42,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
                 const otp = otpList.filter(x => x.email === req.body.email)[0]
                 if(otp) otp.pin = result.pin
                 else otpList.push({ email: req.body.email, pin: result.pin, hash: pinHash})
+                archange.updateCallerActualOTPPinHash((req.session.archange_hash || req.session.heaven_kf || ''), pinHash)
 
                 res.json(Utils.makeHeavenResponse(res, { pass: true, otp: {
                     length: result.pin.length, phone: result.phone 
@@ -56,7 +57,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
         else{
             const pinHash = otpList[pinIndex].hash
             otpList.splice(pinIndex, 1)
-            archange.updateCallerActualOTPPinHash((req.session.archange_hash || req.session.heaven_kf || ''), pinHash)
+            archange.updateCallerActualOTPPinHash((req.session.archange_hash || req.session.heaven_kf || ''), false)
             res.json(Utils.makeHeavenResponse(res, { pass: true, pinHash: pinHash }))
         }
     })

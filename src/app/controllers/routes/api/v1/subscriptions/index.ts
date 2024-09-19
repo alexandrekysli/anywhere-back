@@ -63,8 +63,6 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     })
     router.post('/suspend', async(req: SubscriptionRequest, res) => {
         const result = await suspendSubscription.execute(req.body.id)
-        console.log(result);
-        
         res.json(Utils.makeHeavenResponse(res, result))
     })
 

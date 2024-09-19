@@ -1,5 +1,4 @@
 import Utils from "#utils/index.js"
-import ArchangeGroupEntity from "../../entities/group"
 import ArchangeUserEntity from "../../entities/user"
 import IArchangeUserRepository from "../interfaces/IUserRepository"
 
@@ -7,11 +6,9 @@ import { MongoClient, MongoError, ObjectId } from "mongodb"
 
 class MongoArchangeUserRepository implements IArchangeUserRepository {
     private userCollection
-    private groupCollection
     constructor(mongoClient: MongoClient, dbName: string){
         const db = mongoClient.db(dbName)
         this.userCollection = db.collection<ArchangeUserEntity>('archange-user')
-        this.groupCollection = db.collection<ArchangeGroupEntity>('archange-group')
         db.listCollections().toArray().then(async info => {
             const userCollIndex = info.findIndex(x => x.name === 'archange-user')
             if(userCollIndex === -1) await db.createCollection('archange-user')  
@@ -56,12 +53,10 @@ class MongoArchangeUserRepository implements IArchangeUserRepository {
     async addUser(linkHash: string, group: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
         try {
             const newUser = await this.userCollection.insertOne({ link_hash: linkHash })
-            const groupDocument = await this.groupCollection.findOne({ name: group })
-            if(groupDocument && newUser.insertedId){
+            if(newUser.insertedId){
                 return {
                     data: new ArchangeUserEntity(
                         linkHash,
-                        new ArchangeGroupEntity(groupDocument.name, groupDocument.description, groupDocument.state, groupDocument.access, groupDocument._id.toString()),
                         newUser.insertedId.toString()
                     )
                 }
@@ -73,12 +68,10 @@ class MongoArchangeUserRepository implements IArchangeUserRepository {
 
     async getUserByLinkHash(linkHash: string, group: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
         try {
-            const userDocument = await this.userCollection.findOne({ link_hash: linkHash })
-            const groupDocument = await this.groupCollection.findOne({ name: group })            
-            if(userDocument && groupDocument){
+            const userDocument = await this.userCollection.findOne({ link_hash: linkHash })          
+            if(userDocument){
                 const user = new ArchangeUserEntity(
                     userDocument.link_hash,
-                    new ArchangeGroupEntity(groupDocument.name, groupDocument.description, groupDocument.state, groupDocument.access, groupDocument._id.toString()),
                     userDocument._id.toString()
                 )
                 return { data: user }

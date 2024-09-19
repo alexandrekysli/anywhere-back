@@ -6,7 +6,6 @@ class SuspendSubscription {
 
     public execute = async (id: string): Promise<{ pass: boolean }> => {
         const result = await this.repository.suspendSubscription(id)
-        console.log(result);
         
         if(result.err){
             this.adlogs.writeRuntimeEvent({

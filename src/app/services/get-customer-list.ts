@@ -17,8 +17,10 @@ type CustomerListItem = {
 class GetCustomerList {
     constructor(private adlogs: Adlogs, private userRepository: IUserRepository, private subscriptionRepository: ISubscriptionRepository, private vehicleRepository: IVehicleRepository){}
 
-    public execute = async (manager?: string): Promise< CustomerListItem[] | null > => {
+    public execute = async (manager?: string, linkHash?: string): Promise< CustomerListItem[] | null > => {
         const returnedList: CustomerListItem[] = []
+        const requestor = (await this.userRepository.getUserByArchangeLinkHash(linkHash || '')).data
+
         const customerUserList = await this.userRepository.getUserByType('customer')
         if(customerUserList.data){
             for (const customer of customerUserList.data) {
@@ -30,6 +32,11 @@ class GetCustomerList {
                     pass = customer.manager === manager ? true : false
                     const vehicles = await this.vehicleRepository.getVehicleByCustomer(customer.id || '')
                     if(vehicles.data) fleet = vehicles.data.length
+                }else if(requestor){
+                    if(
+                        !['global_manager', 'admin'].includes(requestor.type) &&
+                        customer.manager !== requestor.id
+                    ) pass = false
                 }
 
                 if(pass){
