@@ -223,18 +223,23 @@ class iStartekTrackerDevice implements ITrackerDevice {
     public makeServer(): void {
         const server = net.createServer()
         server.on('connection', socket => {
-            this.adlogs.writeRuntimeEvent({
+            /* this.adlogs.writeRuntimeEvent({
                 category: 'app',
                 type: 'info',
                 message: 'istartek device connect with ip ' + socket.remoteAddress
-            })
+            }) */
             
             socket.on('data', (data) => {
                 const eventData = this.decodeMessage(data.toString())
                 if(eventData){
                     this.checkMessage(eventData)
                     const index = this.commandStack.findIndex(x => x.imei === eventData.imei)
-                    if(index !== -1) socket.write(this.encodeMessage(eventData.imei, eventData.no, this.commandStack[index].code, this.commandStack[index].cmd))
+                    if(index !== -1) socket.write(this.encodeMessage(
+                        eventData.imei,
+                        eventData.no,
+                        this.commandStack[index].code,
+                        this.commandStack[index].cmd)
+                    )
                 }
             })
 

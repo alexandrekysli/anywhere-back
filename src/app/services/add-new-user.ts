@@ -50,7 +50,7 @@ class AddNewUserAccount {
                 if(newUser.data){
                     const customerType = ['particular', 'corporate']
                     // -> Make ArchangeUser
-                    await this.archange.addArchangeUser(newUser.data.master_id, customerType.includes(newUser.data.type) ? 'customer' : newUser.data.type )
+                    await this.archange.addArchangeUser(newUser.data.master_id)
 
                     this.adlogs.writeRuntimeEvent({
                         category: 'app',

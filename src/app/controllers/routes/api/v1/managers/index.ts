@@ -17,7 +17,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     /** ### Load Repositories ### */
     const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
-    const setUserState = new SetUserState(adlogs, userRepository)
+    const setUserState = new SetUserState(adlogs, archange, userRepository)
     const deleteUser = new DeleteUser(adlogs, archange, userRepository)
 
     /** ### Load Services ### */
@@ -41,8 +41,14 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     })
 
     router.post('/delete', async(req, res) => {
-        const setStateResult = await deleteUser.execute(req.body.id, req.body.pass_hash)
-        res.json(Utils.makeHeavenResponse(res, setStateResult))
+        const caller = archange.getArchangeCallerByIdentifier(String(req.session.archange_hash || req.session.heaven_kf || ''))
+        if(caller){
+            const setStateResult = await deleteUser.execute(req.body.id, req.body.pass_hash)
+            if(setStateResult.pass) caller.remainDereckAccess = 5
+            else caller.remainDereckAccess--
+            
+            res.json(Utils.makeHeavenResponse(res, setStateResult))
+        }
     })
 
     return router

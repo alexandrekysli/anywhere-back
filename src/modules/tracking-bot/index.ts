@@ -234,7 +234,7 @@ class TrackingBot {
                                     // -> Alert to notify detect
                                     if(location){
                                         // -> Mail
-                                        /* if(subscription._package.allowed_option.includes('Email')){
+                                        if(subscription._package.allowed_option.includes('Email')){
                                         }
                                         // -> SMS
                                         if(subscription._package.allowed_option.includes('SMS')){
@@ -245,7 +245,7 @@ class TrackingBot {
                                             else if(data.event === 'impact') this.sms.sendTrackAlertImpact(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
                                             else if(data.event === 'fence-in') this.sms.sendTrackAlertFenceIn(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
                                             else if(data.event === 'fence-out') this.sms.sendTrackAlertFenceOut(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
-                                        } */
+                                        }
                                     }
                                 }
                             }

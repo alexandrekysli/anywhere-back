@@ -22,8 +22,7 @@ class GetUser {
     public execute = async (linkHash: string): Promise< UserData | null > => {
         const user = await this.repository.getUserByArchangeLinkHash(linkHash)
         if(user.data){
-            const customerType = ['particular', 'corporate']
-            const archangeUser =  await this.archange.getArchangeUserByMasterID(user.data.master_id, customerType.includes(user.data.type) ? 'customer' : user.data.type)
+            const archangeUser =  await this.archange.getArchangeUserByMasterID(user.data.master_id)
             if(archangeUser){
                 return {
                     id: user.data.id || '',

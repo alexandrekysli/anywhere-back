@@ -1,3 +1,6 @@
+type ArchangeErrorCode = 'HELL_DELAYED' | 'HELL_BAN' | 'DERECK_UNKNOWN_CALLER' | 'DERECK_EMPTY_ACCESS_ATTEMPT' | 'DERECK_SUSPENDED_CALLER_ACCOUNT' | 'DERECK_BAD_CALLER_TYPE_ACCESS' | 'DERECK_BAD_CALLER_ACCOUNT_ACCESS' | 'DERECK_BAD_BODY_STRUCTURE' | 'DERECK_UNSAFE_ROUTE_ACCESS_UNALLOWED'
+type ArchangeRequestCheckResult = { pass: boolean, err_code?: ArchangeErrorCode, hell_exit_date?: number }
+
 type AdlogSavedItem = {
     id?: string,
     type: 'ready' | 'stop' | 'warning' | 'info',

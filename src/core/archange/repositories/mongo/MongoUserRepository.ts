@@ -50,7 +50,7 @@ class MongoArchangeUserRepository implements IArchangeUserRepository {
         })
     }
 
-    async addUser(linkHash: string, group: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
+    async addUser(linkHash: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
         try {
             const newUser = await this.userCollection.insertOne({ link_hash: linkHash })
             if(newUser.insertedId){
@@ -66,7 +66,7 @@ class MongoArchangeUserRepository implements IArchangeUserRepository {
         }
     }
 
-    async getUserByLinkHash(linkHash: string, group: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
+    async getUserByLinkHash(linkHash: string): Promise<{ data?: ArchangeUserEntity | null; err?: string }> {
         try {
             const userDocument = await this.userCollection.findOne({ link_hash: linkHash })          
             if(userDocument){

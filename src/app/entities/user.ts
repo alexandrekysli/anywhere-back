@@ -8,7 +8,7 @@ class UserEntity {
         public phone: string,
         public readonly master_id: string,
         public readonly type: 'admin' | 'global_manager' | 'manager' | 'corporate' | 'particular',
-        public readonly state: boolean,
+        public state: boolean,
         public readonly adding_date: number,
         public readonly godfather: UserEntity | string,
         public manager: UserEntity | string,

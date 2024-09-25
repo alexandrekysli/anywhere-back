@@ -21,7 +21,11 @@ class AddNewSubscription {
 
         if(lastSubscription.err) err = lastSubscription.err
         else{
-            const beginDate = lastSubscription.data ? (lastSubscription.data.endDate && lastSubscription.data.endDate() || Date.now()) : Date.now()
+            const lastSubscriptioninProgress = lastSubscription.data ? (
+                lastSubscription.data.status && lastSubscription.data.status() === 'actual' ? true : false
+            ) : false
+
+            const beginDate = lastSubscription.data && lastSubscriptioninProgress ? (lastSubscription.data.endDate && lastSubscription.data.endDate() || Date.now()) : Date.now()
 
             const newSubscription = await this.repository.addSubscription(new SubscriptionEntity(data.customer, data.manager, data.package, data.qte, beginDate, [], true))
             if(newSubscription.data) return { id: newSubscription.data.id  }

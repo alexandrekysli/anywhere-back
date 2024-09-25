@@ -164,17 +164,7 @@ class Utils {
     }
 
     static makeHeavenResponse = (res: Response, data: any) => {
-        if(res.locals.archange_check){
-            return {
-                archange: {
-                    pass: res.locals.archange_check.pass === true,
-                    token_bucket: res.locals.archange_check.caller.remain_token || -1,
-                    hell: res.locals.archange_check.hell && { type: res.locals.archange_check.hell.mode, to: res.locals.archange_check.hell.to },
-                    error: res.locals.archange_check.error || ''
-                },
-                data: data
-            }
-        }else return {}
+        return res.locals.archange_check ? { archange: res.locals.archange_check, data: data } : {}
     }
 
     static degreesToRadians = (degrees: number) => degrees * Math.PI / 180

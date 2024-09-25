@@ -67,8 +67,14 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     })
 
     router.post('/set-pairing-io-relay-state', async(req: PairingIOStateChangeRequest, res) => {
-        const exeResult = await setPairingIORelayState.execute(req.body.id, req.body.state, req.body.pass_hash)
-        res.json(Utils.makeHeavenResponse(res, exeResult))
+        const caller = archange.getArchangeCallerByIdentifier(String(req.session.archange_hash || req.session.heaven_kf || ''))
+        if(caller){
+            const exeResult = await setPairingIORelayState.execute(req.body.id, req.body.state, req.body.pass_hash)
+            if(exeResult.pass) caller.remainDereckAccess = 5
+            else caller.remainDereckAccess--
+            
+            res.json(Utils.makeHeavenResponse(res, exeResult))
+        }
     })
 
     router.post('/get-trips', async(req: PairingEventRequest, res) => {

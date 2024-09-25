@@ -33,7 +33,7 @@ class Email {
                 from: 'Anywhere',
                 subject: 'Nouveau Compte',
                 message: {
-                    text: `Nous vous notifions de la creation effective de votre compte sur la plateforme de gestion client Anywhere.#La connexion initiale à la plateforme d'effectuera avec les accès suivants:##Email: ${email}#Mot de passe: ${password}##Cordialement 👍🏾.##--##Ceci est un message à lecture seul. Merci de ne pas y repondre.#Anywhere GPS Platform.`,
+                    text: `Nous vous notifions de la creation effective de votre compte sur Anywhere. Merci d'effectuer votre connexion avec les données suivante:##Email: ${email}#Mot de passe: ${password}##Cordialement 👍🏾.##--##Ce message vous a été automatiquement envoyé suite à la creation de votre compte. Merci de ne pas y repondre.##Anywhere GPS Platform.`,
                     html: undefined
                 }
             }

@@ -12,6 +12,7 @@ import AddNewUserAccount from "#app/services/add-new-user.js"
 import UpdateUserAuth from "#app/services/update-user-auth.js"
 import CheckUserAccountRecoveryEmail from "#app/services/check-user-account-recovery-email.js"
 import RecoveryUserAccount from "#app/services/recovery-user-account.js"
+import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
 
 /** TS */
 interface LoginRequest extends ExpressFractalRequest {
@@ -46,9 +47,10 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     const { router } = new HeavenExpressRouter(adlogs, archange, mongoClient)
     /** ### Load Repositories ### */
     const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
+    const subscriptionRepository = new MongoSubscriptionRepository(mongoClient, 'anywhere')
 
     /** ### Load Services ### */
-    const loginUser = new LoginUser(adlogs, archange, userRepository)
+    const loginUser = new LoginUser(adlogs, archange, userRepository, subscriptionRepository)
     const dataUser = new GetUser(adlogs, archange, userRepository)
     const addNewUserAccount = new AddNewUserAccount(adlogs, archange, userRepository)
     const updateUserAuth = new UpdateUserAuth(adlogs, userRepository)
@@ -60,30 +62,37 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     // -> User login
     router.post('/login', async(req: LoginRequest, res) => {
         setTimeout(async () => {
-            const callerPassHash = req.body.pass_hash
-            const loginResult = await loginUser.execute(callerPassHash || '')
+            const loginPassHash = req.body.pass_hash
+            const caller = archange.getArchangeCallerByIdentifier(String(req.session.archange_hash || req.session.heaven_kf || ''))
 
-            if(loginResult.pass){
-                req.session.archange_hash = loginResult.linkHash
-                
-                // -> Login completed -> remove origin from old caller
-                archange.removeOriginFromCaller(String(req.session.heaven_kf), String(req.session.archange_caller_origin))
-                
-                adlogs.writeRuntimeEvent({
-                    category: 'app',
-                    type: "info",
-                    message: `login attempt complete for caller < ${req.session.archange_hash} >`,
-                    save: true
-                })
-            }else{
-                adlogs.writeRuntimeEvent({
-                    category: 'app',
-                    type: "warning",
-                    message: `login attempt failed for caller < ${req.session.heaven_kf} >`,
-                    save: true
-                })
+            if(caller){
+                const loginResult = await loginUser.execute(loginPassHash || '')
+
+                if(loginResult.pass){
+                    caller.remainDereckAccess = 5
+
+                    req.session.archange_hash = loginResult.linkHash
+                    // -> Login completed -> remove origin from old caller
+                    archange.removeOriginFromCaller(String(req.session.heaven_kf), String(req.session.archange_caller_origin))
+                    
+                    adlogs.writeRuntimeEvent({
+                        category: 'app',
+                        type: "info",
+                        message: `login attempt complete for user < ${loginResult.email} >`,
+                        save: true
+                    })
+                }else{
+                    if(loginResult.custom_err === 'LOGIN_FAILED') caller.remainDereckAccess--
+                     
+                    adlogs.writeRuntimeEvent({
+                        category: 'app',
+                        type: "warning",
+                        message: `login attempt failed for caller < ${req.session.heaven_kf} >`,
+                        save: true
+                    })
+                }
+                res.json(Utils.makeHeavenResponse(res, { pass: loginResult.pass, username: loginResult.username, custom_err: loginResult.custom_err }))
             }
-            res.json(Utils.makeHeavenResponse(res, { pass: loginResult.pass, username: loginResult.username || '' }))
         }, 2000)
     })
 
@@ -99,14 +108,18 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     // -> User logout
     router.get('/logout', async(req, res) => {
-        adlogs.writeRuntimeEvent({
+
+        const user = await dataUser.execute(req.session.archange_hash || '')
+        req.session.archange_hash = undefined
+
+        res.json(Utils.makeHeavenResponse(res, {} ))
+
+        user && adlogs.writeRuntimeEvent({
             category: 'app',
             type: "info",
-            message: `logout complete for caller < ${req.session.archange_hash} >`,
+            message: `logout complete for user < ${user?.email} >`,
             save: true
         })
-        req.session.archange_hash = undefined
-        res.json(Utils.makeHeavenResponse(res, {} ))
     })
 
     // -> New user account saving
@@ -118,8 +131,14 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     // -> New user account saving
     router.post('/edit-auth', async(req: EditAccountAuthRequest, res) => {
-        const updatedAuth = await updateUserAuth.execute(req.body.pass_hash, req.body.data.type, req.body.data.list)
-        res.json(Utils.makeHeavenResponse(res, updatedAuth))
+        const caller = archange.getArchangeCallerByIdentifier(String(req.session.archange_hash || req.session.heaven_kf || ''))
+        if(caller){
+            const updatedAuth = await updateUserAuth.execute(req.body.pass_hash, req.body.data.type, req.body.data.list)
+            if(updatedAuth.pass) caller.remainDereckAccess = 5
+            else caller.remainDereckAccess--
+
+            res.json(Utils.makeHeavenResponse(res, updatedAuth))
+        }
     })
 
     // -> Account recovery request

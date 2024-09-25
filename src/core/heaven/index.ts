@@ -90,11 +90,13 @@ class Heaven {
             // -> 404 Route catching
             this.webServer.use((req, res) => {
                 res.status(404)
-                res.send(`The desired path < ${req.originalUrl} > not existed on this server !`)
+                res.json(Utils.makeHeavenResponse(res, {
+                    error: `The desired path < ${req.originalUrl} > not existed on this server !`
+                }))
 
                 this.adlogs.writeRuntimeEvent({
                     category: 'heaven',
-                    type: 'info',
+                    type: 'warning',
                     message: `caller attempt to access unavailable route < ${req.originalUrl} >`
                 })
             })

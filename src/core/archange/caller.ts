@@ -32,6 +32,8 @@ class ArchangeCaller {
     public usedPerDayOTP = 0
     public nextOTPRefullDate = 0
     public OTPActualPinHash: string | false = false
+
+    public remainDereckAccess = 5
     
     public tokenBucket = 0
     public caller: CallerEntity | null = null
@@ -178,15 +180,14 @@ class ArchangeCaller {
                         // -> detect if caller dosPerHour limit reach
                         if(this.dosPerHourBegin === new Date(nowDate).getHours() && this.dosPerHourCount >= this.archangeConfig.hell.max_dos_per_hour){
                             // -> dosPerHour Limit reach -> put in hell with BAN mode
-                            hellParameters = { mode: 'ban', time: this.archangeConfig.hell.dos_ban_time, switch: true }
+                            await this.postCallerToHell('ban', this.archangeConfig.hell.dos_ban_time)
                         }else{
-                            hellParameters = { mode: 'delayed', time: this.archangeConfig.hell.delayed_time, switch: true }
-                            this.dosPerHourCount++
+                            await this.postCallerToHell('delayed', this.archangeConfig.hell.delayed_time)
                             resetToken = true
                         }
                     }else{
                         // -> caller not in hell -> put in hell with DELAYED mode
-                        hellParameters = { mode: 'delayed', time: this.archangeConfig.hell.delayed_time }
+                        await this.postCallerToHell('delayed', this.archangeConfig.hell.delayed_time)
                     }
                 }
             }else resetToken = true
@@ -194,42 +195,6 @@ class ArchangeCaller {
             if(resetToken){
                 this.tokenBucket = this.archangeConfig.bucket.limit[this.caller.type]
                 this.timestampBucket = nowDate
-            }
-
-            // -> Save caller to hell
-            if(hellParameters){
-                let errorResult = ''
-                if(hellParameters.switch && this.hellItem){
-                    // -> switch mode
-                    const result = await this.hellRepository.updateItemHellMode(this.hellItem, hellParameters.mode, hellParameters.time)
-                    errorResult = result.err
-                }else{
-                    const result = await this.hellRepository.addItem(this.caller.identifier, hellParameters.mode, hellParameters.time)
-                    this.hellItem = result.data
-                    errorResult = result.err
-                }
-
-                // -> Error detect
-                if(errorResult){
-                    this.adlogs.writeRuntimeEvent({
-                        category: 'archange',
-                        type: 'stop',
-                        message: `unable to save/update archange hellItem in db < ${errorResult} >`, save: true
-                    })
-                }else if(this.hellItem){
-                    this.adlogs.writeRuntimeEvent({
-                        category: 'archange',
-                        type: 'warning',
-                        message: `caller < ${this.caller.identifier} > ${hellParameters.switch && 'switch' || 'go'} to hell with < ${hellParameters.mode} > mode until < ${new Date(this.hellItem.to).toISOString()} >`,
-                        save: true
-                    })
-                }
-
-                // -> Increment dosPerHourCount
-                if(this.hellItem && hellParameters.mode === 'delayed'){
-                    this.dosPerHourCount++
-                    this.dosPerHourBegin = (new Date(this.hellItem.from).getHours())
-                }
             }
             
             /** UPDATE ORIGIN LAST ACTIVITY PROPERTY */
@@ -256,6 +221,49 @@ class ArchangeCaller {
                 })
             }, 10000)
         }
+    }
+
+    postCallerToHell = async (mode: 'delayed' | 'ban', time: number): Promise<number> => {
+        if(this.caller){
+            const hellUpdate = this.hellItem !== null
+            let errorResult = ''
+
+            if(this.hellItem){
+                // -> Caller already in hell
+                const result = await this.hellRepository.updateItemHellMode(this.hellItem, mode, time)
+                errorResult = result.err
+            }else{
+                // -> Caller not in hell
+                const result = await this.hellRepository.addItem(this.caller.identifier, mode, time)
+                errorResult = result.err
+                this.hellItem = result.data
+            }
+
+            // -> Increment dosPerHourCount
+            if(this.hellItem && mode === 'delayed'){
+                this.dosPerHourCount++
+                this.dosPerHourBegin = (new Date(this.hellItem.from).getHours())
+            }
+
+            // -> Error handling
+            if(errorResult){
+                this.adlogs.writeRuntimeEvent({
+                    category: 'archange',
+                    type: 'stop',
+                    message: `unable to save/update archange hellItem in db < ${errorResult} >`, save: true
+                })
+            }else if(this.hellItem){
+                this.adlogs.writeRuntimeEvent({
+                    category: 'archange',
+                    type: 'warning',
+                    message: `caller < ${this.caller.identifier} > ${hellUpdate && 'switch' || 'go'} to hell with < ${mode} > mode until < ${new Date(this.hellItem.to).toISOString()} >`,
+                    save: true
+                })
+                return this.hellItem.to
+            }
+        }
+
+        return -1
     }
 
     /** Remove caller from Archange Hell */
@@ -290,7 +298,6 @@ class ArchangeCaller {
             }
         }
     }
-
 }
 
 export default ArchangeCaller

@@ -26,15 +26,6 @@ type RequestOrigin = {
     archange_hash: string,
     hash: string
 }
-type ArchangeRequestCheckResult = {
-    pass: boolean,
-    caller?: { value: string, remain_token: number },
-    hell: {
-        mode: 'ban' | 'delayed',
-        to: number
-    } | null,
-    error?: string
-}
 type ArchangeRequestType = { method: string, path: string, body: {[key: string]: string} }
 
 /**
@@ -45,7 +36,18 @@ type ArchangeRequestType = { method: string, path: string, body: {[key: string]:
  */
 
 class Archange {
-    private activeCallerList: ArchangeCaller[] = []
+    public activeCallerList: ArchangeCaller[] = []
+    private archangeCheckErrorCode = {
+        HELL_DELAYED: 429,
+        HELL_BAN: 404,
+        DERECK_UNKNOWN_CALLER: 429,
+        DERECK_EMPTY_ACCESS_ATTEMPT: 429,
+        DERECK_SUSPENDED_CALLER_ACCOUNT: 403,
+        DERECK_BAD_CALLER_TYPE_ACCESS: 403,
+        DERECK_BAD_CALLER_ACCOUNT_ACCESS: 403,
+        DERECK_BAD_BODY_STRUCTURE: 400,
+        DERECK_UNSAFE_ROUTE_ACCESS_UNALLOWED: 404,
+    }
     constructor(
         private adlogs: Adlogs,
         private config: ConfigType['infrastructure']['archange'],
@@ -111,44 +113,56 @@ class Archange {
         return activeCallerFilterList[0]
     }
 
-    private deepRequestCheck = (caller: ArchangeCaller, request: ArchangeRequestType): { pass: boolean, err: string } => {
+    /**
+     * # Deep Request Check
+     * Authorization check by request
+     * @param caller
+     * @param request
+     * @returns
+     */
+    private dereck = (caller: ArchangeCaller, request: ArchangeRequestType): { pass: boolean, err_code?: ArchangeErrorCode } => {
         const SAFECHECK = false
         const customerTypes = ['corporate', 'particular']
 
-        if(caller.caller){
-            let rule: typeof routeAccessRules[0]['rules'][0] | undefined
-            routeAccessRules.forEach(group => {
-                const _rule = group.rules.filter(rule => group.main_path + '/' + rule.path === request.path)[0]
-                if(_rule) rule = _rule
-            })
-            if(rule){
-                let err = ''
-                const appAccountType = caller.appAccount ? caller.appAccount.type : ''
-                const parsedAccountType = customerTypes.includes(appAccountType) ? 'customer' : appAccountType
-
-                /* console.log(request.path);
-                console.log('account type > ' + parsedAccountType, rule.app_user_type); */
-
-                if (!rule.type.includes(caller.caller.type)) {
-                    err = 'BAD_REQUEST_TYPE_ACCESS'
-                } else if (
-                    rule.type.length === 1 &&
-                    rule.type[0] === 'user' &&
-                    rule.app_user_type &&
-                    caller.appAccount &&
-                    !rule.app_user_type.includes(parsedAccountType as 'global_manager' | 'manager' | 'customer' | 'admin')
-                ) {
-                    err = 'BAD_REQUEST_ACCOUNT_ACCESS'
-                } else if (!rule.body.safeParse(request.body).success) {
-                    err = 'BAD_REQUEST_BODY'
+        if(caller.remainDereckAccess > 0){
+            if(caller.caller){                
+                if(caller.appAccount && !caller.appAccount.state) return { pass: false, err_code: 'DERECK_SUSPENDED_CALLER_ACCOUNT' }
+                else{
+                    let rule: typeof routeAccessRules[0]['rules'][0] | undefined
+                    routeAccessRules.forEach(group => {
+                        const _rule = group.rules.filter(rule => group.main_path + '/' + rule.path === request.path)[0]
+                        if(_rule) rule = _rule
+                    })
+                    if(rule){
+                        let err: ArchangeErrorCode | undefined
+                        const appAccountType = caller.appAccount ? caller.appAccount.type : ''
+                        const parsedAccountType = customerTypes.includes(appAccountType) ? 'customer' : appAccountType
+        
+                        /* console.log(request.path);
+                        console.log('account type > ' + parsedAccountType, rule.app_user_type); */
+        
+                        if (!rule.type.includes(caller.caller.type)) {
+                            err = 'DERECK_BAD_CALLER_TYPE_ACCESS'
+                        } else if (
+                            rule.type.length === 1 &&
+                            rule.type[0] === 'user' &&
+                            rule.app_user_type &&
+                            caller.appAccount &&
+                            !rule.app_user_type.includes(parsedAccountType as 'global_manager' | 'manager' | 'customer' | 'admin')
+                        ) {
+                            err = 'DERECK_BAD_CALLER_ACCOUNT_ACCESS'
+                        } else if (!rule.body.safeParse(request.body).success) {
+                            err = 'DERECK_BAD_BODY_STRUCTURE'
+                        }
+        
+                        return { pass: err === undefined, err_code: err }
+                    }else return { pass: !SAFECHECK, err_code: SAFECHECK ? 'DERECK_UNSAFE_ROUTE_ACCESS_UNALLOWED' : undefined }
                 }
-
-                return { pass: err === '', err: err }
-            }else return { pass: !SAFECHECK, err: SAFECHECK ? 'UNSAFE_ROUTE_ACCESS' : '' }
-        }else return { pass: false, err: 'UNKNOWN_CALLER' }
+            }else return { pass: false, err_code: 'DERECK_UNKNOWN_CALLER' }
+        }else return { pass: false, err_code: 'DERECK_EMPTY_ACCESS_ATTEMPT' }
     }
 
-    private archangeRequestAnalyser = async (origin: RequestOrigin, request: ArchangeRequestType): Promise<ArchangeRequestCheckResult | undefined> => {
+    private archangeRequestAnalyser = async (origin: RequestOrigin, request: ArchangeRequestType): Promise<ArchangeRequestCheckResult> => {
         // -> Detect active caller
         const activeCaller = await this.getActiveCaller(origin.type, origin.caller, origin.archange_hash)
         if(activeCaller.caller){
@@ -165,23 +179,13 @@ class Archange {
                 // -> Retrieve caller origin
                 let originIndex = activeCaller.caller.originList.findIndex(x => x.identifier === origin.hash)
                 if(originIndex === -1){
-                    if(origin.type === 'known' && activeCaller.caller?.originList.length > 2){
-                        // -> Spoiler cookie detect with another origin -> 403
-                        this.adlogs.writeRuntimeEvent({
-                            category: 'archange',
-                            type: 'warning',
-                            message: `cookie usurpation detect with new origin for caller < ${activeCaller.caller.identifier} >`
-                        })
-                        return { pass: false, hell: null }
-                    }else{
-                        // -> New origin for ip and user caller
-                        originIndex = await activeCaller.addNewOrigin(origin.ip, origin.hash, origin.agent)
-                        this.adlogs.writeRuntimeEvent({
-                            category: 'archange',
-                            type: 'info',
-                            message: `new origin < ${origin.hash} > for caller < ${activeCaller.caller.identifier} >`
-                        })
-                    }
+                    // -> Add new origin for caller
+                    originIndex = await activeCaller.addNewOrigin(origin.ip, origin.hash, origin.agent)
+                    this.adlogs.writeRuntimeEvent({
+                        category: 'archange',
+                        type: 'info',
+                        message: `new origin < ${origin.hash} > for caller < ${activeCaller.caller.identifier} >`
+                    })
                 }
 
                 // -> Check request on caller
@@ -189,22 +193,36 @@ class Archange {
             }
 
             if(activeCaller.hellItem){
-                return {
-                    pass: false,
-                    hell: { mode: activeCaller.hellItem.mode, to: activeCaller.hellItem.to },
-                    caller: { value: activeCaller.caller.identifier, remain_token: activeCaller.tokenBucket }
-                }
-            }else{
-                // -> Deep Request checking
-                const drcStatut = this.deepRequestCheck(activeCaller, request)
-                if(!drcStatut.pass) console.log(request.path, drcStatut);
-                
-                return { pass: drcStatut.pass, hell: null, caller: { value: activeCaller.caller.identifier, remain_token: activeCaller.tokenBucket }, error: drcStatut.err }
+                // -> Caller in hell
+                const hellCode = activeCaller.hellItem.mode === 'ban' ? 'HELL_BAN' : 'HELL_DELAYED'
+                return { pass: false, err_code: hellCode, hell_exit_date: activeCaller.hellItem.to }
             }
-        }
-        return { pass: true, hell: null }
-    }
 
+            // -> Caller not in hell -> Start Deep Request checking
+            let hellExitDate: number | undefined = undefined
+            const dereckState = this.dereck(activeCaller, request)
+            
+            if(dereckState.err_code){
+                activeCaller.remainDereckAccess--
+                if(activeCaller.remainDereckAccess <= 0){
+                    // -> Too many bad dereck -> ban for 24H
+                    const DAY = 86400000
+                    hellExitDate = await activeCaller.postCallerToHell('ban', DAY)
+                }
+
+                this.adlogs.writeRuntimeEvent({
+                    category: 'archange',
+                    type: 'warning',
+                    message: `dereck error < ${dereckState.err_code} > for caller < ${activeCaller.caller.identifier} >`,
+                    save: true
+                })
+            }
+
+            return { ...dereckState, hell_exit_date: hellExitDate }
+        }
+
+        return { pass: false, err_code: 'DERECK_UNKNOWN_CALLER' }
+    }
 
     /**
      * ###
@@ -219,42 +237,23 @@ class Archange {
         if(origin.type === 'ip') req.session.heaven_kf = randomUUID()
         
         // -> Save origin identifier on session
-        req.session.archange_caller_origin = origin.hash
+        req.session.archange_caller_origin && (req.session.archange_caller_origin = origin.hash)
         
-        const result = await this.archangeRequestAnalyser(origin, {
-            method: req.method,
-            body: req.body,
-            path: req.path
-        })
+        const archangeCheckData = await this.archangeRequestAnalyser(origin, { method: req.method, body: req.body, path: req.path }) 
+        res.locals.archange_check = archangeCheckData
 
-        res.locals.archange_check = result
-        if(result){
-            if(result.hell){
-                if(result.hell.mode === 'delayed'){
-                    setTimeout(() => {
-                        next()
-                    }, Utils.getRandomNumber(3000, 10000));
-                }else{
-                    res.json({
-                        archange: {
-                            pass: false,
-                            token_bucket: 0,
-                            hell: { type: 'ban', to: result.hell.to }
-                        }
-                    })
-                }
-            }else if(!result.pass){
-                if(result.error === 'BAD_REQUEST_BODY') res.status(400)
-                else if(result.error === 'BAD_REQUEST_METHOD') res.status(405)
-                else res.status(403)
-            
-                res.json(Utils.makeHeavenResponse(res, {}))
-            }else next()
-        }else res.status(404)
+        if(archangeCheckData.err_code){
+            res.status(this.archangeCheckErrorCode[archangeCheckData.err_code])
+            if(archangeCheckData.err_code === 'HELL_DELAYED'){
+                setTimeout(() => {
+                    next()
+                }, Utils.getRandomNumber(3000, 10000))
+            }else res.json(Utils.makeHeavenResponse(res, {}))
+        }else next()
     }
 
-    public getArchangeUserByMasterID = async (master_id: string, group: string) => {
-        const user = await this.userRepository.getUserByLinkHash(Utils.makeSHA256(`4C#${master_id}@`), group)        
+    public getArchangeUserByMasterID = async (master_id: string) => {
+        const user = await this.userRepository.getUserByLinkHash(Utils.makeSHA256(`4C#${master_id}@`))        
         if(user.data !== undefined){
             return user.data || null
         }else{
@@ -267,8 +266,20 @@ class Archange {
         }
     }
 
-    public addAccountToCaller = (identifier: any) => {
+    public setActiveCallerWithAppAccountState = (accountID: string, state: boolean) => {
+        const activeCaller = this.activeCallerList.filter(caller => caller.appAccount?.id === accountID)[0]
+        if(activeCaller && activeCaller.appAccount){
+            activeCaller.appAccount.state = state
 
+            return true
+        }
+        return false
+    }
+
+
+    public getArchangeCallerByIdentifier = (identifier: string): ArchangeCaller | false => {
+        const caller = this.activeCallerList.filter(caller => caller.caller?.identifier === identifier)[0]
+        return caller || false
     }
 
     public checkCallerOTPAvailability = (identifier: string): true | Error => {
@@ -301,8 +312,8 @@ class Archange {
         if(caller) caller.OTPActualPinHash = hash
     }
 
-    public addArchangeUser = async (master_id: string, group: string) => {
-        const user = await this.userRepository.addUser(Utils.makeSHA256(`4C#${master_id}@`), group)
+    public addArchangeUser = async (master_id: string) => {
+        const user = await this.userRepository.addUser(Utils.makeSHA256(`4C#${master_id}@`))
         if(user.data !== undefined){
             return user.data || null
         }else{
