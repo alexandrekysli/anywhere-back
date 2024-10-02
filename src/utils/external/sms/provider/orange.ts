@@ -41,9 +41,9 @@ class OrangeMiddleware implements ISMSProvider {
         }else return true
     }
 
-    private exeSend = async (data: SendSMSData) : Promise<{ state?: boolean; err?: string }> => {
+    private exeSend = async (data: SendSMSData) : Promise<boolean | Error> => {
         try {
-            if(this.actualToken){                
+            if(this.actualToken){                 
                 const result = await fetch(`https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B2250000/requests`, {
                     method: 'POST',
                     headers: {
@@ -54,17 +54,18 @@ class OrangeMiddleware implements ISMSProvider {
                         outboundSMSMessageRequest: {
                             address: `tel:${data.to.replace(/ /g, '')}`,
                             senderAddress: 'tel:+2250000',
+                            senderName: 'Anywhere',
                             outboundSMSTextMessage: { message: data.message }
                         }
                     })
                 })
-                if(result.ok) return { state: true }
-                else return { err: JSON.stringify(await result.json())}
+                if(result.ok) true
+                else return Error(await result.json())
             }
         } catch (err) {
-            return { err: err instanceof Error && err.message || '' }
+            return err instanceof Error ? err : Error('<!>')
         }
-        return { err: 'no token available' }
+        return Error('no token available')
     }
 
     public getAvailability = async (): Promise<{ state: boolean; sms: number; to: number } | Error> => {
@@ -87,17 +88,17 @@ class OrangeMiddleware implements ISMSProvider {
         }else return Error('unable to retrieve a token from Orange SMS API provider !')
     }
 
-    public sendSMS = async (data: SendSMSData): Promise<{ state?: boolean; err?: string }> => {
+    async sendSMS(data: SendSMSData): Promise<boolean | Error> {
         const availability = await this.getAvailability()
         
         if(!(availability instanceof Error)){
             if(availability.state) return await this.exeSend(data)
             else{
-                if(availability.sms === 0) return { err: 'unable to send sms due to no available unit !' }
-                else if(availability.to < Date.now()) return { err: 'unable to send sms due to expired contract !' }
-                else return { err: 'unable to send sms with this contract !' }
+                if(availability.sms === 0) return Error('unable to send sms due to no available unit !')
+                else if(availability.to < Date.now()) return Error('unable to send sms due to expired contract !')
+                else return Error('unable to send sms with this contract !')
             }
-        } else return { err: availability.message }
+        } else return availability
     }
 }
 

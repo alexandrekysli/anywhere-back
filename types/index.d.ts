@@ -6,7 +6,8 @@ type AdlogSavedItem = {
     type: 'ready' | 'stop' | 'warning' | 'info',
     date?: number,
     category: string,
-    message: string
+    message: string,
+    critical?: Error
 }
 
 type ToCoupledItem = { value: string, text: string }

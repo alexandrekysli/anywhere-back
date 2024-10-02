@@ -121,7 +121,7 @@ class Archange {
      * @returns
      */
     private dereck = (caller: ArchangeCaller, request: ArchangeRequestType): { pass: boolean, err_code?: ArchangeErrorCode } => {
-        const SAFECHECK = false
+        const SAFECHECK = true
         const customerTypes = ['corporate', 'particular']
 
         if(caller.remainDereckAccess > 0){

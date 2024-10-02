@@ -19,45 +19,168 @@ type SendMailData = {
  */
 
 class Email {
-    private mailToSendStack: SendMailData[] = []
     private emailConfig = Config.infrastructure.email
     private middleware: IEMailProvider
+    private commonEndBody = '#Au plaisir de vous revoir très prochainement.##Ce message a été automatiquement généré. Merci de ne pas y répondre.#Anywhere GPS Platform.'
+
     constructor(private adlogs: Adlogs){
         this.middleware = new NodemailerMiddleware(this.emailConfig)
     }
 
-    public sendNewAccountEmail = async (email: string, password: string) => {
+    exeMailSend = async (mail: SendMailData) => {
+        const result = await this.middleware.sendMail(mail)
+        if(result instanceof Error) this.handleError(result, mail.to)
+        else return true
+
+        return false
+    }
+
+    handleError = (error: Error, address: string[] | string) => {
+        this.adlogs.writeRuntimeEvent({
+            category: 'app',
+            type: 'warning',
+            message: `unable to send email to < ${address.toString()} >`,
+            critical: error,
+            save: true
+        })
+    }
+
+    sendNewAccountAuthData = async (email: string, fullname: string, password: string) => {
         const mail = {
             to: [email],
             data: {
                 from: 'Anywhere',
-                subject: 'Nouveau Compte',
+                subject: '👋🏾 Bienvenue sur Anywhere',
                 message: {
-                    text: `Nous vous notifions de la creation effective de votre compte sur Anywhere. Merci d'effectuer votre connexion avec les données suivante:##Email: ${email}#Mot de passe: ${password}##Cordialement 👍🏾.##--##Ce message vous a été automatiquement envoyé suite à la creation de votre compte. Merci de ne pas y repondre.##Anywhere GPS Platform.`,
+                    text: `Bienvenue sur Anywhere#-#Bonjour ${fullname},#Nous avons le plaisir de vous annoncer la création effective de votre compte sur notre plateforme.#Merci d'effectuer votre prochaine connexion avec les informations suivantes :##Email : ${email}#Mot de passe : ${password}` + this.commonEndBody,
                     html: undefined
                 }
             }
         }
-        const result = await this.middleware.sendMail(mail)
-
-        if(result.state){
-            this.adlogs.writeRuntimeEvent({
-                category: 'app',
-                type: 'info',
-                message: `new account email send complete to recipient < ${email} >`
-            })
-            return true
-        }else{
-            this.mailToSendStack.push(mail)
-            this.adlogs.writeRuntimeEvent({
-                category: 'app',
-                type: 'warning',
-                message: `unable to send email to < ${email} > < ${password} > with error < ${result.err} >`,
-                save: true
-            })
-            return false
-        }
+        return await this.exeMailSend(mail)
     }
+
+    sendOldAccountAuthData = async (email: string, fullname: string, password: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🔐 Recuperation de compte',
+                message: {
+                    text: `Bonjour ${fullname},#La procédure de récupération de votre compte a bien été achevé.##Email : ${email}#Nouveau mot de passe : ${password}` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertOverspeed = async (email: string, vehicleModel: string, vehicleNumberplate: string, vehicleSpeed: number, vehicleMaxSpeed: number, location: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🚀 Alerte de Survitesse',
+                message: {
+                    text: `Bonjour, le véhicule ${vehicleModel} immatriculé ${vehicleNumberplate} vient d'enregistrer un excès de vitesse (${vehicleSpeed} / ${vehicleMaxSpeed}) à ${location}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertImpact = async (email: string, vehicleModel: string, vehicleNumberplate: string, location: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '💥 Alerte de Collision',
+                message: {
+                    text: `Bonjour, une possible collision a été détectée sur le véhicule ${vehicleModel} immatriculé ${vehicleNumberplate} à ${location}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertFence = async (email: string, vehicleModel: string, vehicleNumberplate: string, mode: string, location: string, fenceName: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🚧 Alerte de Cloture géographique',
+                message: {
+                    text: `Bonjour, le véhicule ${vehicleModel} immatriculé ${vehicleNumberplate} à ${location} est ${fenceName} de la sa zone géographique (${fenceName})}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertAntiTheft = async (email: string, vehicleModel: string, vehicleNumberplate: string, location: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🚨 Suspicion de vol',
+                message: {
+                    text: `Bonjour, des mouvements suspects été détectés sur le véhicule éteint ${vehicleModel} immatriculé ${vehicleNumberplate} à ${location}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertEngineLock = async (email: string, vehicleModel: string, vehicleNumberplate: string, location: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🔒 Alerte de Verouillage Moteur',
+                message: {
+                    text: `Bonjour, le véhicule ${vehicleModel} immatriculé ${vehicleNumberplate} a été immobilisé, via une commande de verrouillage moteur, à ${location}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+    sendVehicleAlertSOS = async (email: string, vehicleModel: string, vehicleNumberplate: string, location: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '🆘 Alerte SOS',
+                message: {
+                    text: `Bonjour, commande d'urgence enclenchée sur le véhicule ${vehicleModel} immatriculé ${vehicleNumberplate} à ${location}.` + this.commonEndBody,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
+
+    sendCriticalAdlogsEvent = async (email: string, event: AdlogSavedItem) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: '⚠️ Critical error on Anywhere',
+                message: {
+                    text: `Dear Administrator, an critical error has occurred on Anywhere platform.##Adlogs Event#-#Date : ${new Date(event.date || 0).toLocaleString()}#Category : ${event.category}#Type : ${event.type}#Message : ${event.message}##${event.critical ? `Catch traceback#-#${event.critical}` : ''}`,
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
 }
 
 export default Email

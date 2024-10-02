@@ -58,7 +58,7 @@ class AddNewUserAccount {
                         message: `new user account < ${newUser.data.email} > created by caller < ${linkHash} >`
                     })
 
-                    this.email.sendNewAccountEmail(newUser.data.email, randomPassword)
+                    this.email.sendNewAccountAuthData(newUser.data.email, `${newUser.data.surname} ${newUser.data.name}`, randomPassword)
 
                     return { account_id: newUser.data.id }
                 }else return null

@@ -171,7 +171,7 @@ class Heaven {
             this.adlogs.writeRuntimeEvent({
                 category: 'heaven',
                 type: 'stop',
-                message: `enabled to run heaven web server because < ${err.message} >`,
+                message: `unabled to run heaven web server because < ${err.message} >`,
                 save: true
             })
         })

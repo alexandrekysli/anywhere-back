@@ -12,6 +12,7 @@ import Adlogs from "./core/adlogs"
 import Heaven from "./core/heaven"
 import Archange from "./core/archange"
 import { MongoBase } from "./core/rock"
+import Email from "./utils/external/email"
 
 // -> Repositories
 import MongoAdlogsRepository from "./core/adlogs/repositories/MongoAdlogsRepository"
@@ -63,15 +64,16 @@ const archange = new Archange(
 )
 
 // -> ### Application
+const emailService = new Email(adlogs)
 adlogs.writeRuntimeEvent({ category: 'global', type: 'info', message: 'k-engine is starting' })
-adlogs.setRepo(new MongoAdlogsRepository(mongoBase.client, 'anywhere'))
+adlogs.init(new MongoAdlogsRepository(mongoBase.client, 'anywhere'), emailService, engineConfig.admin_email)
 
 // -> Check if good app configuration
 if(engineConfig.error){
     adlogs.writeRuntimeEvent({
         category: 'global',
         type: 'stop',
-        message: `bad configuration - ${engineConfig.error} -`, save: true 
+        message: `bad configuration - ${engineConfig.error} -`, save: true
     })
 } else {
     // ### -> App configuration good -> next step ...

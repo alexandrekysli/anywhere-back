@@ -8,7 +8,7 @@ type SendMailData = {
 }
 
 interface IEmailProvider {
-    sendMail(data: SendMailData): Promise<{ state?: boolean, err?: string }>
+    sendMail(data: SendMailData): Promise<boolean | Error>
 }
 
 export default IEmailProvider

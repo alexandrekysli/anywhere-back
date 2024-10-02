@@ -238,13 +238,13 @@ class TrackingBot {
                                         }
                                         // -> SMS
                                         if(subscription._package.allowed_option.includes('SMS')){
-                                            if(data.event === 'sos') this.sms.sendTrackAlertSOS(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
+                                            /* if(data.event === 'sos') this.sms.sendTrackAlertSOS(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
                                             else if(data.event === 'relay-on') this.sms.sendTrackAlertRelay(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate)
                                             else if(data.event === 'speeding') this.sms.sendTrackAlertSpeeding(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, result.speed, vehicle.max_speed)
                                             else if(data.event === 'suspicious-activity') this.sms.sendTrackAlertSuspiciousActivity(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate)
                                             else if(data.event === 'impact') this.sms.sendTrackAlertImpact(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
                                             else if(data.event === 'fence-in') this.sms.sendTrackAlertFenceIn(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
-                                            else if(data.event === 'fence-out') this.sms.sendTrackAlertFenceOut(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
+                                            else if(data.event === 'fence-out') this.sms.sendTrackAlertFenceOut(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location) */
                                         }
                                     }
                                 }

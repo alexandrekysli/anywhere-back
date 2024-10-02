@@ -26,7 +26,7 @@ class RecoveryUserAccount {
                 if(result.err) err = result.err
                 else{
                     // -> New Password making for user -> Send SMS to this
-                    const smsSend = await this.sms.sendNewUserPassword(user.data.phone, generatedPassword)
+                    const smsSend = await this.sms.sendOldAccountAuthData(user.data.phone, `${user.data.surname} ${user.data.name}`, user.data.email, generatedPassword)
                     return { pass: smsSend, err: '' }
                 }
             }else return { pass: false, err: 'Cet adresse e-mail n\'est liée à aucun compte !' }

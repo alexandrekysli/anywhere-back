@@ -15,7 +15,7 @@ class MakeOTPRequest {
         if(user){
             let pin = ''
             do { pin = Utils.genString(5, false, true) } while (pin === '')
-            const smsSend = await this.sms.sendOTPPin(user.phone, pin)
+            const smsSend = await this.sms.sendOTPPin(user.phone, user.email, pin)
             return smsSend ? { phone: Utils.obscurifyPhoneNumber(user.phone, 3), pin: pin } : false
         }else false
     }

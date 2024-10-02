@@ -199,6 +199,12 @@ class Utils {
         }
         return phoneNumberZip + phone
     }
+
+    static capitalizeThen = (_value: string, all: boolean) => {
+        if(all){
+            return _value[0].toUpperCase() + _value.slice(1, _value.length).toLowerCase()
+        }else return _value.trim().toLowerCase().replace(/\w\S*/g, (w) => (w.replace(/^\w/, (c) => c.toUpperCase())));
+    }
 }
 
 export default Utils

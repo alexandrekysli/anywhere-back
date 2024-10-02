@@ -9,11 +9,11 @@ class NodemailerMiddleware implements IEMailProvider{
         this.transporter = Nodemailer.createTransport(config)
     }
 
-    public async sendMail(mail: SendMailData): Promise<{ state?: boolean; err?: string; }> {
+    async sendMail(mail: SendMailData): Promise<boolean | Error> {
         return new Promise((resolve) => {
             this.transporter.verify((err, ok) => {
                 if(err){
-                    resolve({ err: err instanceof Error ? err.message : '' })
+                    resolve(err instanceof Error ? err : Error('<!>'))
                 }else{
                     this.transporter.sendMail({
                         from: `${mail.data.from} "<${this.config.auth.user}>"`,
@@ -22,8 +22,8 @@ class NodemailerMiddleware implements IEMailProvider{
                         text: mail.data.message.text?.replace(/\#/g, '\n'),
                         html: mail.data.message.html
                     })
-                    .then(() => resolve({ state: true }))
-                    .catch(err => resolve({ err: err }))
+                    .then(() => resolve(true))
+                    .catch(err => resolve(err instanceof Error ? err : Error('<!>')))
                 }
             })
         })

@@ -151,7 +151,8 @@ const Config = {
         api_key: {
             google: getParsedProperty('KE_GOOGLE_API_KEY')
         }
-    }
+    },
+    admin_email: 'alexhacker1995@gmail.com'
 }
 
 export default Config
