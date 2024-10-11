@@ -19,10 +19,12 @@ class LoginUser {
                     const customerType = ['particular', 'corporate']
                     if(customerType.includes(userOnDB.data.type)){
                         let customErr: undefined | string
-                        const lastCustomerSubscription = (await this.subscriptionRepository.getLastSubscriptionByCustomer(String(userOnDB.data.id))).data
-                        if(lastCustomerSubscription && lastCustomerSubscription._package instanceof PackageEntity && lastCustomerSubscription.status){
-                            const actualSubscription = lastCustomerSubscription.status() === 'actual'
-                            const actualSubscriptionHasApplicationAccess = actualSubscription ? lastCustomerSubscription._package.allowed_option.includes('Application') : false
+                        const activeCustomerSubscriptionList = (await this.subscriptionRepository.getActiveSubscriptionByCustomer(String(userOnDB.data.id))).data
+                        const activeCustomerSubscription = activeCustomerSubscriptionList && activeCustomerSubscriptionList[0]
+                        if(activeCustomerSubscription && activeCustomerSubscription._package instanceof PackageEntity && activeCustomerSubscription.status){
+                            console.log(new Date(activeCustomerSubscription.starting_date).toLocaleDateString(), activeCustomerSubscription.status())
+                            const actualSubscription = activeCustomerSubscription.status() === 'actual'
+                            const actualSubscriptionHasApplicationAccess = actualSubscription ? activeCustomerSubscription._package.allowed_option.includes('Application') : false
                             customErr = actualSubscription ? (
                                 actualSubscriptionHasApplicationAccess ? undefined : 'SUBSCRIPTION_NO_CONTAIN_APPLICATION_ACCESS'
                             ) : 'NO_AVAILABLE_SUBSCRIPTION' 

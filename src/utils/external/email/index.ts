@@ -39,8 +39,7 @@ class Email {
         this.adlogs.writeRuntimeEvent({
             category: 'app',
             type: 'warning',
-            message: `unable to send email to < ${address.toString()} >`,
-            critical: error,
+            message: `unable to send email to < ${address.toString()} > because of < ${error} >`,
             save: true
         })
     }
@@ -173,7 +172,7 @@ class Email {
                 from: 'Anywhere',
                 subject: '⚠️ Critical error on Anywhere',
                 message: {
-                    text: `Dear Administrator, an critical error has occurred on Anywhere platform.##Adlogs Event#-#Date : ${new Date(event.date || 0).toLocaleString()}#Category : ${event.category}#Type : ${event.type}#Message : ${event.message}##${event.critical ? `Catch traceback#-#${event.critical}` : ''}`,
+                    text: `Dear Administrator, an critical error has occurred on Anywhere platform.##Adlogs Event#-#DateTime : ${new Date(event.date || 0).toLocaleString()}#Category : ${event.category}#Type : ${event.type}#Message : ${event.message}##${event.critical ? `Catch traceback#-#${event.critical.stack}` : ''}`,
                     html: undefined
                 }
             }

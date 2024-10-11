@@ -61,7 +61,6 @@ export default class {
                 // -> Administrator notification
                 if(this.email && (data.type === 'stop' || data.critical)){
                     const emailSendResult = await this.email.sendCriticalAdlogsEvent(this.adminEmail, data)
-                    console.log(emailSendResult);
                 }
 
                 // -> k-engine closing

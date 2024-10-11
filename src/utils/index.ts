@@ -102,6 +102,33 @@ class Utils {
         }
     }
 
+    static sweetTimestampDiff = (newTimestamp: number, oldTimestamp: number) => {
+        const _timestamp = new Date(newTimestamp - oldTimestamp)
+        const timestamp = _timestamp.getTime()
+
+        const sweetDate = { h: 0, m: 0, s: 0 }
+        let sweetTime = ''
+
+        if(timestamp < 60000){
+            sweetDate.s = Math.trunc(timestamp / 1000)
+            sweetTime = String(sweetDate.s) + 's'
+        }else if(timestamp < 3600000){
+            const remainSec = timestamp % 60000
+            sweetDate.m = Math.trunc(timestamp / 60000)
+            sweetDate.s = Math.trunc(remainSec / 1000)
+            sweetTime = `${sweetDate.m}min` + (remainSec ? (String(sweetDate.s) + 's') : '')
+        }else{
+            const remainMin = timestamp % 3600000
+            const remainSec = remainMin % 60000
+            sweetDate.h = Math.trunc(timestamp / 3600000)
+            sweetDate.m = Math.trunc(remainMin / 60000)
+            sweetDate.s = Math.trunc(remainSec / 1000)
+            sweetTime = `${sweetDate.h}h` + (remainMin ? (String(sweetDate.m) + 'min') : '') + (remainSec ? (String(sweetDate.s) + 's') : '')
+        }
+
+        return { value: sweetDate, text: sweetTime }
+    }
+
     /**
      * Return a unique hash from a array
      * @param activeArray Actual used hastring hash

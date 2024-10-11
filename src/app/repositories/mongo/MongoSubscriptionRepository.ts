@@ -32,6 +32,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                     { name: '_package', type: 'string', required: true },
                     { name: 'starting_date', type: 'number', required: true },
                     { name: 'state', type: 'bool', required: true },
+                    { name: 'dependency_subscription', type: 'string', required: true },
                     { name: 'vehicle', type: 'complexe', required: true, data: {
                         bsonType: ['array'],
                         items: { bsonType: 'string' }
@@ -84,6 +85,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                         subscription.starting_date,
                         vehicles,
                         subscription.state,
+                        subscription.dependency_subscription,
                         subscription._id.toString()
                     ) }
                 }
@@ -113,6 +115,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                         subscription.starting_date,
                         subscription.vehicle,
                         subscription.state,
+                        subscription.dependency_subscription,
                         subscription._id.toString()
                     ))
                 }
@@ -125,7 +128,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
 
     async getLastSubscriptionByCustomer(customer: string): Promise<{ data?: SubscriptionEntity | null; err?: string }> {
         try {
-            const result = (await this.collection.find({ customer: customer, state: true }).toArray())
+            const result = (await this.collection.find({ customer: customer }).toArray())
 
             let lastSubscription: SubscriptionEntity | null = null
             let lastSubscriptionEndDate = 0
@@ -138,6 +141,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                     _subscription.starting_date,
                     _subscription.vehicle,
                     _subscription.state,
+                    _subscription.dependency_subscription,
                     _subscription._id.toString()
                 )
 
@@ -155,6 +159,36 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
         }
     }
 
+    async getChildSubscription(dependency: string): Promise<SubscriptionEntity[] | Error> {
+        const subscriptionList = []
+        try {
+            const result = (await this.collection.find({ dependency_subscription: dependency }).toArray())
+            for (const subscription of result) {
+                // -> Retrieve dependency
+                const customer = await this.userRepository.getUserByID(subscription.customer.toString())
+                const manager = await this.userRepository.getUserByID(subscription.manager.toString())
+                const _package = await this.packageRepository.getPackageByID(subscription._package.toString())
+
+                if(customer.data && manager.data && _package.data){
+                    subscriptionList.push(new SubscriptionEntity(
+                        customer.data,
+                        manager.data,
+                        _package.data,
+                        subscription.qte,
+                        subscription.starting_date,
+                        subscription.vehicle,
+                        subscription.state,
+                        subscription.dependency_subscription,
+                        subscription._id.toString()
+                    ))
+                }
+            }
+            return subscriptionList
+        } catch (error) {
+            return error instanceof MongoError ? error :  Error('never !!!')
+        }
+    }
+
     async getActiveSubscriptionByCustomer(customer: string): Promise<{ data?: SubscriptionEntity[]; err?: string }> {
         const activeSubscriptionList: SubscriptionEntity[] = []
         try {
@@ -168,6 +202,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                     _subscription.starting_date,
                     _subscription.vehicle,
                     _subscription.state,
+                    _subscription.dependency_subscription,
                     _subscription._id.toString()
                 )
 
@@ -204,6 +239,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                         subscription.starting_date,
                         subscription.vehicle,
                         subscription.state,
+                        subscription.dependency_subscription,
                         subscription._id.toString()
                     ))
                 }
@@ -234,6 +270,7 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                         subscription.starting_date,
                         subscription.vehicle,
                         subscription.state,
+                        subscription.dependency_subscription,
                         subscription._id.toString()
                     ))
                 }
@@ -259,6 +296,15 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
             return { data: Boolean(result.modifiedCount), err: '' }
         } catch (error) {
             return { data: false, err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async updateSubscriptionStartingDate(id: string, startingDate: number): Promise<boolean | Error> {
+        try {
+            const result = await this.collection.updateOne({ _id: new ObjectId(id) }, { $set: { starting_date : startingDate } }, { upsert: false }) 
+            return Boolean(result.modifiedCount)
+        } catch (error) {
+            return error instanceof MongoError ? error :  Error('never !!!')
         }
     }
     

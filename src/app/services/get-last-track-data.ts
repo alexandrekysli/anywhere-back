@@ -10,11 +10,12 @@ class GetLastTrackData {
 
     public execute = async (pairingID: string): Promise< TrackData | null> => {
         const pairingFenceArea = (await this.pairingRepository.getPairing(pairingID)).data?.geofence
+        const pairing = (await this.pairingRepository.getPairing(pairingID)).data
         const lastEvent = (await this.pairingEventRepository.getLastPairingEvent(pairingID)).data
         const unreadAlert = (await this.pairingEventRepository.getAllUnreadPairingEventAlert(pairingID)).data
         const fenceArea = (await this.fenceAreaRepository.getArea(pairingFenceArea || ''))
 
-        if(lastEvent && unreadAlert){
+        if(pairing && lastEvent && unreadAlert){
             for (const alert of unreadAlert) {
                 if(this.softAlert.includes(alert.alert)) await this.pairingEventRepository.makePairingEventRead(alert.id)
             }
@@ -27,7 +28,7 @@ class GetLastTrackData {
                 fence: fenceArea.data && { id: fenceArea.data.id || '', name: fenceArea.data.name, coordinates: fenceArea.data.geometry.coordinates[0].map(x => {
                     return { lat: x[1], lng: x[0] }
                 }) } || undefined,
-                date: lastEvent.date,
+                date: pairing.last_state_date,
                 coordinates: lastEvent.localisation.gps,
                 location: lastEvent.localisation.location,
                 speed: lastEvent.speed,

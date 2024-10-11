@@ -29,6 +29,7 @@ import IFenceAreaRepository from "#app/repositories/IFenceAreaRepository.js"
 import GetFenceValue from "#app/services/get-fence-value.js"
 import GetFenceArea from "#app/services/get-fence-area.js"
 import GetLastPairingFenceValue from "#app/services/get-last-pairing-fence.js"
+import Email from "#utils/external/email/index.js"
 
 
 /** TS */
@@ -43,9 +44,11 @@ type NewTracker = { brand: string, model: string, sn: string, imei: string }
 
 class TrackingBot {
     private newTrackerList: NewTracker[] = []
+    private lastLivePairingEventList: {id: string, date: number}[] = []
     private trackerDeviceType: {[key: string]: ITrackerDevice } = {}
     private io?: ServerIO
     private services
+    private email
     private sms
     private tripMaker
     private lockTrackerEffect = {
@@ -94,6 +97,7 @@ class TrackingBot {
             getFenceValue: new GetFenceValue(adlogs, pairingRepository, fenceAreaRepository),
             getLastPairingFenceValue: new GetLastPairingFenceValue(pairingEventRepository)
         }
+        this.email = new Email(adlogs)
         this.sms = new SMS(adlogs)
 
         // -> Start WS Server
@@ -182,16 +186,31 @@ class TrackingBot {
                         vehicle
                     ){
                         // -> Save Pairing last state
-                        const nowTime = Date.now()
-                        this.pairingRepository.setPairingLastStateDate(pairing.id || '', nowTime)
-                        this.io.emit('track-ping', {
-                            id: pairing.id || '',
-                            date: nowTime,
-                            powered: data.state.device.battery.powered,
-                            network_signal: data.state.device.network.signal,
-                            gps: data.state.gps !== undefined,
-                            io: { relay: data.state.io.relay, buzzer: data.state.io.buzzer}
-                        })
+                        // ++ Distinguish buffer event to live event
+
+                        console.log('>', Utils.sweetTimestampDiff(Date.now(), data.date));
+                        
+
+                        const lastLivePairingEvent = this.lastLivePairingEventList.filter(x => x.id === pairing.id)[0]
+
+                        let liveEvent = true
+                        if(lastLivePairingEvent){
+                            if(data.date > lastLivePairingEvent.date) lastLivePairingEvent.date = data.date
+                            else liveEvent = false
+                        }else this.lastLivePairingEventList.push({ id: String(pairing.id), date: data.date})
+
+                        if(liveEvent){
+                            const nowTime = Date.now()
+                            this.pairingRepository.setPairingLastStateDate(pairing.id || '', nowTime)
+                            this.io.emit('track-ping', {
+                                id: pairing.id || '',
+                                date: nowTime,
+                                powered: data.state.device.battery.powered,
+                                network_signal: data.state.device.network.signal,
+                                gps: data.state.gps !== undefined,
+                                io: { relay: data.state.io.relay, buzzer: data.state.io.buzzer}
+                            })
+                        }
 
                         // -> Dynamic alert check
                         // -> Speeding
@@ -233,18 +252,36 @@ class TrackingBot {
                                     
                                     // -> Alert to notify detect
                                     if(location){
+                                        const vehicleFullModel = vehicle.brand + ' ' + vehicle.model
                                         // -> Mail
                                         if(subscription._package.allowed_option.includes('Email')){
+                                            if(data.event === 'sos') this.email.sendVehicleAlertSOS(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'relay-on') this.email.sendVehicleAlertEngineLock(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'speeding') this.email.sendVehicleAlertOverspeed(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, result.speed, vehicle.max_speed, location)
+                                            else if(data.event === 'suspicious-activity') this.email.sendVehicleAlertAntiTheft(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'impact') this.email.sendVehicleAlertImpact(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(['fence-in', 'fence-out'].includes(data.event)){
+                                                // -> Retrieve fence area name
+                                                const fenceArea = await this.services.getFenceArea.execute(String(pairing.id))
+                                                if(fenceArea){
+                                                    this.email.sendVehicleAlertFence(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, data.event === 'fence-in' ? 'entré' : 'sorti', location, fenceArea.name)
+                                                }
+                                            }
                                         }
                                         // -> SMS
                                         if(subscription._package.allowed_option.includes('SMS')){
-                                            /* if(data.event === 'sos') this.sms.sendTrackAlertSOS(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
-                                            else if(data.event === 'relay-on') this.sms.sendTrackAlertRelay(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate)
-                                            else if(data.event === 'speeding') this.sms.sendTrackAlertSpeeding(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, result.speed, vehicle.max_speed)
-                                            else if(data.event === 'suspicious-activity') this.sms.sendTrackAlertSuspiciousActivity(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate)
-                                            else if(data.event === 'impact') this.sms.sendTrackAlertImpact(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
-                                            else if(data.event === 'fence-in') this.sms.sendTrackAlertFenceIn(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location)
-                                            else if(data.event === 'fence-out') this.sms.sendTrackAlertFenceOut(subscription.customer.phone, vehicle.brand + ' ' + vehicle.model, vehicle.numberplate, location) */
+                                            if(data.event === 'sos') this.sms.sendVehicleAlertSOS(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'relay-on') this.sms.sendVehicleAlertEngineLock(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'speeding') this.sms.sendVehicleAlertOverspeed(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, result.speed, vehicle.max_speed, location)
+                                            else if(data.event === 'suspicious-activity') this.sms.sendVehicleAlertAntiTheft(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(data.event === 'impact') this.sms.sendVehicleAlertImpact(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, location)
+                                            else if(['fence-in', 'fence-out'].includes(data.event)){
+                                                // -> Retrieve fence area name
+                                                const fenceArea = await this.services.getFenceArea.execute(String(pairing.id))
+                                                if(fenceArea){
+                                                    this.sms.sendVehicleAlertFence(subscription.customer.phone, vehicleFullModel, vehicle.numberplate, data.event === 'fence-in' ? 'entré' : 'sorti', location, fenceArea.name)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -279,6 +316,10 @@ class TrackingBot {
                 }
             }
         }
+    }
+
+    private sureTrack = async () => {
+        
     }
 }
 

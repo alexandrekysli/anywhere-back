@@ -54,13 +54,13 @@ class OrangeMiddleware implements ISMSProvider {
                         outboundSMSMessageRequest: {
                             address: `tel:${data.to.replace(/ /g, '')}`,
                             senderAddress: 'tel:+2250000',
-                            senderName: 'Anywhere',
-                            outboundSMSTextMessage: { message: data.message }
+                            /* senderName: 'Anywhere', */
+                            outboundSMSTextMessage: { message: data.message.replace(/#/g, '\n') }
                         }
                     })
                 })
-                if(result.ok) true
-                else return Error(await result.json())
+                if(result.ok) return true
+                else return Error(JSON.stringify(await result.json()))
             }
         } catch (err) {
             return err instanceof Error ? err : Error('<!>')

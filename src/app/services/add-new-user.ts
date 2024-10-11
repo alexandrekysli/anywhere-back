@@ -4,6 +4,7 @@ import Archange from "#core/archange/index.js"
 import Utils from "#utils/index.js"
 import IUserRepository from "../repositories/IUserRepository"
 import Email from "#utils/external/email/index.js"
+import SMS from "#utils/external/sms/index.js"
 
 /** TS */
 type NewUserData = {
@@ -18,9 +19,11 @@ type ExeResult = { err?: string, account_id?: string }
 
 class AddNewUserAccount {
     private email
+    private sms
 
     constructor(private adlogs: Adlogs, private archange: Archange, private repository: IUserRepository){
         this.email = new Email(adlogs)
+        this.sms = new SMS(adlogs)
     }
 
     public execute = async (data: NewUserData, linkHash: string): Promise< ExeResult | null > => {
@@ -48,8 +51,7 @@ class AddNewUserAccount {
                 ))
 
                 if(newUser.data){
-                    const customerType = ['particular', 'corporate']
-                    // -> Make ArchangeUser
+                    // -> Create ArchangeUser
                     await this.archange.addArchangeUser(newUser.data.master_id)
 
                     this.adlogs.writeRuntimeEvent({
@@ -58,6 +60,8 @@ class AddNewUserAccount {
                         message: `new user account < ${newUser.data.email} > created by caller < ${linkHash} >`
                     })
 
+                    // -> Send user authentification data 
+                    this.sms.sendNewAccountAuthData(newUser.data.phone, `${newUser.data.surname} ${newUser.data.name}`, newUser.data.email, randomPassword)
                     this.email.sendNewAccountAuthData(newUser.data.email, `${newUser.data.surname} ${newUser.data.name}`, randomPassword)
 
                     return { account_id: newUser.data.id }

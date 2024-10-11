@@ -29,7 +29,7 @@ const routeAccessRules: RouteAccessRulesType = [{
 		{
 			path: 'auth/login',
 			secured: true,
-			type: ['known', 'user'],
+			type: ['known'],
 			body: z.object({
 				pass_hash: z.string().regex(sureStringRegex)
 			}).strict()
@@ -320,7 +320,8 @@ const routeAccessRules: RouteAccessRulesType = [{
 					customer: z.string().regex(sureStringRegex),
 					manager: z.string().regex(sureStringRegex),
 					package: z.string().regex(sureStringRegex),
-					qte: z.number().positive()
+					qte: z.number().positive(),
+					provisioningSubscription: z.string().regex(sureStringRegex)
 				})
 			}).strict()
 		},{

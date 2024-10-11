@@ -7,6 +7,7 @@ import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscripti
 
 import { MongoClient } from "mongodb"
 import GetCustomerSubscription from "#app/services/get-customer-subscription.js"
+import GetActiveCustomerSubscription from "#app/services/get-active-customer-subscription.js"
 import AddNewSubscription from "#app/services/add-new-subscription.js"
 import GetSubscription from "#app/services/get-subscription.js"
 import SetSubscriptionFleet from "#app/services/set-subscription-fleet.js"
@@ -22,7 +23,8 @@ interface AddNewSubscriptionRequest extends ExpressFractalRequest {
             customer: string,
             manager: string,
             package: string,
-            qte: number
+            qte: number,
+            provisioningSubscription: string
         }
     }
 }
@@ -39,6 +41,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     /** ### Load Services ### */
     const getCustomerSubscription = new GetCustomerSubscription(adlogs, mongoSubscriptionRepository)
+    const getActiveCustomerSubscription = new GetActiveCustomerSubscription(adlogs, mongoSubscriptionRepository)
     const addNewSubscriptionRequest = new AddNewSubscription(adlogs, mongoSubscriptionRepository)
     const getSubscription = new GetSubscription(adlogs, mongoSubscriptionRepository)
     const setSubscriptionFleet = new SetSubscriptionFleet(adlogs, mongoSubscriptionRepository)
@@ -47,6 +50,10 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     /** ### Router dispatching ### */
     router.post('/get-by-customer', async(req, res) => {
         const subscriptionList = await getCustomerSubscription.execute(req.body.id || '')
+        res.json(Utils.makeHeavenResponse(res, subscriptionList))
+    })
+    router.post('/get-active-by-customer', async(req, res) => {
+        const subscriptionList = await getActiveCustomerSubscription.execute(req.body.id || '')
         res.json(Utils.makeHeavenResponse(res, subscriptionList))
     })
     router.post('/get-one', async(req: SubscriptionRequest, res) => {

@@ -11,6 +11,7 @@ class SubscriptionEntity {
         public readonly starting_date: number,
         public vehicle: VehicleEntity[] | string[],
         public state: boolean,
+        public dependency_subscription?: string,
         public id?: string
     ){}
 
@@ -28,7 +29,7 @@ class SubscriptionEntity {
 
     public endDate? = () => {
         if(this._package instanceof PackageEntity){
-            return this.starting_date + this._package.day_validity * (86400000)
+            return this.starting_date + this._package.day_validity * this.qte * (86400000)
         }
         return 0
     }
