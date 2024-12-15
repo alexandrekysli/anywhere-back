@@ -3,23 +3,6 @@ import IVehicleRepository from "#app/repositories/IVehicleRepository.js"
 import UserEntity from "#app/entities/user.js"
 import ISubscriptionRepository from "#app/repositories/ISubscriptionRepository.js"
 
-
-/** TS */
-type VehicleData = {
-    id: string,
-    brand: string,
-    model: string,
-    numberplate: string,
-    type: 'motorcycle' | 'car' | 'truck',
-    group: string,
-    driver: string,
-    customer_name: string,
-    customer_id: string,
-    max_speed: number,
-    state: 'inventory' | 'paired' | 'unpaired' | 'lost',
-    subscription_count: number
-}
-
 class GetVehicle {
     constructor(private adlogs: Adlogs, private repository: IVehicleRepository, private subscriptionRepository: ISubscriptionRepository){}
 
@@ -47,13 +30,16 @@ class GetVehicle {
             }
         }else err = vehicle.err || ''
 
-        // -> Write error
-        this.adlogs.writeRuntimeEvent({
-            category: 'app',
-            type: 'stop',
-            message: `unable to use db < ${err} >`,
-            save: true
-        })
+        if(err){
+            // -> Write error
+            this.adlogs.writeRuntimeEvent({
+                category: 'app',
+                type: 'stop',
+                message: `unable to use db < ${err} >`,
+                save: true
+            })
+        }
+
         return null
     }
 }

@@ -16,12 +16,8 @@ class SetPairingIORelayState {
             err = exeUser.err
         }else{
             if(exeUser.data){
-                // -> Executor found -> Retrieve Pairing tracker IMEI
-                const tracker = (await this.pairingRepository.getPairing(id)).data?.tracker
-                if(tracker instanceof TrackerEntity){
-                    this.adlogs.hub.emit('change-tracker-relay-state', { brand: tracker.brand, imei: tracker.imei, state: state })
-                    return { pass: true }
-                }else return { pass: false, err: 'Ce couplage n\'existe pas !' }
+                this.adlogs.hub.emit('change-tracker-relay-state', { pairingID: id, state: state })
+                return { pass: true }
             }else{
                 // -> Executor not found -> bad password
                 return { pass: false, err: 'Votre mot de passe est incorrect !' }

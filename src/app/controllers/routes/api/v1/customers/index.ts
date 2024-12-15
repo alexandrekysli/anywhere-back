@@ -15,6 +15,7 @@ import GetAvailableManager from "#app/services/get-available-manager.js"
 import SetCustomerManager from "#app/services/set-customer-manager.js"
 import MongoVehicleRepository from "#app/repositories/mongo/MongoVehicleRepository.js"
 import GetAvailableCustomer from "#app/services/get-available-customer.js"
+import MongoPairingRepository from "#app/repositories/mongo/MongoPairingRepository.js"
 
 /** TS */
 interface GetAvailableManagerRequest extends ExpressFractalRequest {
@@ -36,12 +37,13 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     /** ### Load Repositories ### */
     const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
+    const pairingRepository = new MongoPairingRepository(mongoClient, 'anywhere')
     const vehicleRepository = new MongoVehicleRepository(mongoClient, 'anywhere')
     const subscriptionRepository = new MongoSubscriptionRepository(mongoClient, 'anywhere')
 
     /** ### Load Services ### */
     const setUserState = new SetUserState(adlogs, archange, userRepository)
-    const setCustomerManager = new SetCustomerManager(adlogs, userRepository)
+    const setCustomerManager = new SetCustomerManager(adlogs, userRepository, vehicleRepository, pairingRepository)
     const deleteUser = new DeleteUser(adlogs, archange, userRepository)
     const getCustomerList = new GetCustomerList(adlogs, userRepository, subscriptionRepository, vehicleRepository)
     const getCustomer = new GetCustomer(adlogs, userRepository, new MongoSubscriptionRepository(mongoClient, 'anywhere'))

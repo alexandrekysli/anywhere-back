@@ -1,4 +1,3 @@
-import IFenceAreaRepository from "#app/repositories/IFenceAreaRepository.js"
 import IPairingEventRepository from "#app/repositories/IPairingEventRepository.js"
 import IPairingRepository from "#app/repositories/IPairingRepository.js"
 import Adlogs from "#core/adlogs/index.js"
@@ -6,14 +5,12 @@ import Adlogs from "#core/adlogs/index.js"
 class GetLastTrackData {
     private softAlert = ['low-battery', 'power-on', 'power-off', 'relay-off', 'buzzer-off', 'fence-in', 'powered', 'unpowered', 'gps-lost', 'gps-found']
 
-    constructor(private adlogs: Adlogs, private pairingRepository: IPairingRepository, private pairingEventRepository: IPairingEventRepository, private fenceAreaRepository: IFenceAreaRepository){}
+    constructor(private adlogs: Adlogs, private pairingRepository: IPairingRepository, private pairingEventRepository: IPairingEventRepository){}
 
-    public execute = async (pairingID: string): Promise< TrackData | null> => {
-        const pairingFenceArea = (await this.pairingRepository.getPairing(pairingID)).data?.geofence
+    public execute = async (pairingID: string, eventDate = true): Promise< TrackData | null> => {
         const pairing = (await this.pairingRepository.getPairing(pairingID)).data
         const lastEvent = (await this.pairingEventRepository.getLastPairingEvent(pairingID)).data
         const unreadAlert = (await this.pairingEventRepository.getAllUnreadPairingEventAlert(pairingID)).data
-        const fenceArea = (await this.fenceAreaRepository.getArea(pairingFenceArea || ''))
 
         if(pairing && lastEvent && unreadAlert){
             for (const alert of unreadAlert) {
@@ -21,14 +18,11 @@ class GetLastTrackData {
             }
             return {
                 id: String(lastEvent.id),
-                state: lastEvent.speed || lastEvent.acc ? 'on' : 'off',
+                state: lastEvent.speed || lastEvent.acc ? 'move' : 'off',
                 move: lastEvent.speed > 0,
                 alert: unreadAlert.map(x => x.alert),
                 clear_alert: true,
-                fence: fenceArea.data && { id: fenceArea.data.id || '', name: fenceArea.data.name, coordinates: fenceArea.data.geometry.coordinates[0].map(x => {
-                    return { lat: x[1], lng: x[0] }
-                }) } || undefined,
-                date: pairing.last_state_date,
+                date: eventDate ? lastEvent.date : pairing.last_state_date,
                 coordinates: lastEvent.localisation.gps,
                 location: lastEvent.localisation.location,
                 speed: lastEvent.speed,

@@ -11,13 +11,14 @@ type AdlogSavedItem = {
 }
 
 type ToCoupledItem = { value: string, text: string }
-
+type TrackerCommand = "device-info" | "relay-on" | "relay-off" | "initialize"
+type TrackerResponse = { name:  TrackerCommand, data: any }
 type TrackerMessage = {
     date: number,
     brand: string,
     imei: string,
     event: 'command-response' | 'state' | 'low-battery' | 'power-on' | 'power-off' | 'sos' | 'relay-on' | 'relay-off' | 'buzzer-on' | 'buzzer-off' | 'speeding' | 'suspicious-activity' | 'impact' | 'fence-in' | 'fence-out' | 'powered' | 'unpowered' | 'gps-lost' | 'gps-found',
-    response?: { name:  'device-info' | 'relay-lock' | 'relay-unlock', data: any },
+    response?: TrackerResponse,
     state?: {
         move: boolean,
         gps?: {
@@ -38,10 +39,10 @@ type TrackerMessage = {
     }
 }
 type Coordinates = { lat: number, lng: number }
-
+type PairingState = 'move' | 'off' | 'alert' | 'ghost' | 'unwatched'
 type TrackData = {
     id: string,
-    state: 'on' | 'off',
+    state: PairingState,
     move: boolean,
     alert: string[],
     clear_alert: boolean,
@@ -58,6 +59,21 @@ type TrackData = {
         network: { signal: number }
     },
     io: { acc: boolean, relay: boolean, buzzer: boolean }
+}
+
+type VehicleData = {
+    id: string,
+    brand: string,
+    model: string,
+    numberplate: string,
+    type: 'motorcycle' | 'car' | 'truck',
+    group: string,
+    driver: string,
+    customer_name: string,
+    customer_id: string,
+    max_speed: number,
+    state: 'inventory' | 'paired' | 'unpaired' | 'lost',
+    subscription_count: number
 }
 
 type SendMailData = {

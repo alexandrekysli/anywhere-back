@@ -10,56 +10,62 @@ class AddNewPairingEvent {
 
     constructor(private adlogs: Adlogs, private repository: IPairingEventRepository){}
 
-    public execute = async (pairingID: string, eventMessage: TrackerMessage, fenceValue: TrackData['fence_value']): Promise<TrackData | null> => {
-        let err = ''        
-        if(eventMessage.state){
+    public execute = async (
+        pairingID: string,
+        date: number,
+        event: TrackerMessage['event'],
+        state: TrackerMessage['state'],
+        fenceValue: TrackData['fence_value']
+    ): Promise<TrackData | null> => {
+        let err = ''
+        if(state){
             // -> Retrieve last pairing event
             const lastPosition = await this.repository.getLastPairingEvent(pairingID)
             if(lastPosition.err) err = lastPosition.err || ''
             else{                
-                if(eventMessage.state.gps && eventMessage.state.gps.speed){
+                if(state.gps && state.gps.speed){
                     // -> With coordinates 
-                    const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(eventMessage.state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 15                    
+                    const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 15                    
                     if(distance >= /* 15 */ 40){
                         console.log(`new position with distance -> ${distance}`)
                         const entity = new PairingEventEntity(
-                            Date.now(),
-                            eventMessage.event,
-                            eventMessage.event === eventMessage.event,
-                            { gps: eventMessage.state.gps.coordinates, location: '' },
-                            eventMessage.state.gps.orientation,
-                            eventMessage.state.gps.speed,
-                            eventMessage.state.gps.altitude,
-                            eventMessage.state.gps.odometer,
-                            eventMessage.state.device.battery,
-                            eventMessage.state.device.network.signal,
+                            date,
+                            event,
+                            event === event,
+                            { gps: state.gps.coordinates, location: '' },
+                            state.gps.orientation,
+                            state.gps.speed,
+                            state.gps.altitude,
+                            state.gps.odometer,
+                            state.device.battery,
+                            state.device.network.signal,
                             fenceValue,
-                            eventMessage.state.io.acc,
-                            eventMessage.state.io.relay,
-                            eventMessage.state.io.buzzer,
+                            state.io.acc,
+                            state.io.relay,
+                            state.io.buzzer,
                             pairingID
                         )
                         return await this.customSave(entity)
                     }
                 }else{
                     // -> Without coordinates
-                    if(lastPosition.data && eventMessage.event !== 'state'){
-                        console.log(`new position with last event by alert -> ${eventMessage.event}`)
+                    if(lastPosition.data && event !== 'state'){
+                        console.log(`new position with last event by alert -> ${event}`)
                         const entity = new PairingEventEntity(
-                            Date.now(),
-                            eventMessage.event,
-                            this.softAlert.includes(eventMessage.event) ? true : false,
+                            date,
+                            event,
+                            this.softAlert.includes(event) ? true : false,
                             lastPosition.data.localisation,
                             lastPosition.data.orientation,
-                            Utils.timestampDiff(Date.now(), lastPosition.data.date, 'hour') > 1 ? 0 : lastPosition.data.speed,
+                            Utils.timestampDiff(date, lastPosition.data.date, 'hour') > 1 ? 0 : lastPosition.data.speed,
                             lastPosition.data.altitude,
                             lastPosition.data.odometer,
-                            eventMessage.state.device.battery,
-                            eventMessage.state.device.network.signal,
-                            fenceValue,
-                            eventMessage.state.io.acc,
-                            eventMessage.state.io.relay,
-                            eventMessage.state.io.buzzer,
+                            state.device.battery,
+                            state.device.network.signal,
+                            lastPosition.data.fence,
+                            state.io.acc,
+                            state.io.relay,
+                            state.io.buzzer,
                             pairingID
                         )
                         return await this.customSave(entity)
@@ -94,7 +100,7 @@ class AddNewPairingEvent {
         }else{
             return {
                 id: String(event.id),
-                state: event.speed || event.acc ? 'on' : 'off',
+                state: event.speed || event.acc ? 'move' : 'off',
                 move: event.speed > 0,
                 alert: event.alert !== 'state' ? [ event.alert ] : [],
                 clear_alert: false,

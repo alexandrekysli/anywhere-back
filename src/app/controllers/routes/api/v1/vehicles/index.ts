@@ -65,7 +65,7 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
     /** ### Load Services ### */
     const getVehicle = new GetVehicle(adlogs, vehicleRepository, subscriptionRepository)
     const deleteVehicle = new DeleteVehicle(adlogs, vehicleRepository)
-    const editVehicle = new EditVehicle(adlogs, vehicleRepository)
+    const editVehicle = new EditVehicle(adlogs, vehicleRepository, pairingRepository)
     const addNewVehicle = new AddNewVehicle(adlogs, vehicleRepository, trackerRepository, pairingRepository)
     const getCustomerVehicle = new GetCustomerVehicle(adlogs, vehicleRepository, pairingRepository)
     const getUnsubscribedCustomerVehicle = new GetUnsubscribedCustomerVehicle(adlogs, subscriptionRepository, vehicleRepository)

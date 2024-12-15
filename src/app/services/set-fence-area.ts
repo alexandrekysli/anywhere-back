@@ -7,11 +7,12 @@ class SetFenceArea {
 
     public execute = async (pairingID: string, fenceAreaID: string): Promise<{ pass: boolean }> => {
         let err = ''
-
         const pairing = (await this.pairingRepository.getPairing(pairingID)).data
         if(pairing){
             const setFenceAreaState = (await this.pairingRepository.setPairingGeofence(pairingID, fenceAreaID)).data
             if(setFenceAreaState){
+                // -> Notify TrackingBot
+                this.adlogs.hub.emit('refresh-pairing', pairingID)
                 return { pass: setFenceAreaState }
             }
         }

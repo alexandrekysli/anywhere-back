@@ -12,6 +12,7 @@ import AddNewSubscription from "#app/services/add-new-subscription.js"
 import GetSubscription from "#app/services/get-subscription.js"
 import SetSubscriptionFleet from "#app/services/set-subscription-fleet.js"
 import SuspendSubscription from "#app/services/suspend-subscription.js"
+import MongoPairingRepository from "#app/repositories/mongo/MongoPairingRepository.js"
 
 /** TS */
 interface SubscriptionRequest extends ExpressFractalRequest {
@@ -38,14 +39,15 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     /** ### Load Repositories ### */
     const mongoSubscriptionRepository = new MongoSubscriptionRepository(mongoClient, 'anywhere')
+    const mongoPairingRepository = new MongoPairingRepository(mongoClient, 'anywhere')
 
     /** ### Load Services ### */
     const getCustomerSubscription = new GetCustomerSubscription(adlogs, mongoSubscriptionRepository)
     const getActiveCustomerSubscription = new GetActiveCustomerSubscription(adlogs, mongoSubscriptionRepository)
     const addNewSubscriptionRequest = new AddNewSubscription(adlogs, mongoSubscriptionRepository)
     const getSubscription = new GetSubscription(adlogs, mongoSubscriptionRepository)
-    const setSubscriptionFleet = new SetSubscriptionFleet(adlogs, mongoSubscriptionRepository)
-    const suspendSubscription = new SuspendSubscription(adlogs, mongoSubscriptionRepository)
+    const setSubscriptionFleet = new SetSubscriptionFleet(adlogs, mongoSubscriptionRepository, mongoPairingRepository)
+    const suspendSubscription = new SuspendSubscription(adlogs, mongoSubscriptionRepository, mongoPairingRepository)
 
     /** ### Router dispatching ### */
     router.post('/get-by-customer', async(req, res) => {

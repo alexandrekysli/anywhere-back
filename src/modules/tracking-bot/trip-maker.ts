@@ -1,7 +1,7 @@
 import IPairingTripRepository from "#app/repositories/IPairingTripRepository.js"
 import AddNewPairingTrip from "#app/services/add-new-pairing-trip.js"
 import Adlogs from "#core/adlogs/index.js"
-import { ConfigType } from "../../config"
+import Config from "../../config"
 
 /** TS */
 type TripMakerItem = {
@@ -20,15 +20,18 @@ type TripMakerItem = {
  */
 
 class TripMaker {
+    private tripLimit = Config.infrastructure.tracking_bot.trip_limit
     private pairingTripItem: TripMakerItem[] = []
     private services
-    constructor(private tripLimit: ConfigType['infrastructure']['tracking_bot']['trip_limit'], adlogs: Adlogs, pairingTripRepository: IPairingTripRepository){
+    constructor(adlogs: Adlogs, pairingTripRepository: IPairingTripRepository){
         this.services = {
             addNewPairingTrip: new AddNewPairingTrip(adlogs, pairingTripRepository)
         }
     }
 
-    public newPairingEvent = (pairingID: string, data: TrackData) => {
+    public newPairingEvent = (pairingID: string, data: TrackData, live: boolean) => {
+        live && console.log('live trip event !');
+        
         const trip = this.pairingTripItem.filter(x => x.pairing === pairingID)[0]
         if(trip){
             // -> Old Pairing trip

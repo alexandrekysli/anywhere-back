@@ -74,8 +74,6 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
                     _vehicle.data && vehicles.push(_vehicle.data)
                 }
 
-                //console.log(vehicles)
-                
                 if(customer.data && manager.data && _package.data ){
                     return { data: new SubscriptionEntity(
                         customer.data,
@@ -100,6 +98,36 @@ class MongoSubscriptionRepository implements ISubscriptionRepository {
         const subscriptionList = []
         try {
             const result = (await this.collection.find({ customer: customer }).toArray())
+            for (const subscription of result) {
+                // -> Retrieve dependency
+                const customer = await this.userRepository.getUserByID(subscription.customer.toString())
+                const manager = await this.userRepository.getUserByID(subscription.manager.toString())
+                const _package = await this.packageRepository.getPackageByID(subscription._package.toString())
+
+                if(customer.data && manager.data && _package.data){
+                    subscriptionList.push(new SubscriptionEntity(
+                        customer.data,
+                        manager.data,
+                        _package.data,
+                        subscription.qte,
+                        subscription.starting_date,
+                        subscription.vehicle,
+                        subscription.state,
+                        subscription.dependency_subscription,
+                        subscription._id.toString()
+                    ))
+                }
+            }
+            return { data: subscriptionList }
+        } catch (error) {
+            return { err: error instanceof MongoError && error.message || '' }
+        }
+    }
+
+    async getSubscriptionByManager(manager: string): Promise<{ data?: SubscriptionEntity[]; err?: string }> {
+        const subscriptionList = []
+        try {
+            const result = (await this.collection.find({ manager: manager }).toArray())
             for (const subscription of result) {
                 // -> Retrieve dependency
                 const customer = await this.userRepository.getUserByID(subscription.customer.toString())

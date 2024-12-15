@@ -321,7 +321,7 @@ const routeAccessRules: RouteAccessRulesType = [{
 					manager: z.string().regex(sureStringRegex),
 					package: z.string().regex(sureStringRegex),
 					qte: z.number().positive(),
-					provisioningSubscription: z.string().regex(sureStringRegex)
+					provisioningSubscription: z.literal('').or(z.string().regex(sureStringRegex))
 				})
 			}).strict()
 		},{

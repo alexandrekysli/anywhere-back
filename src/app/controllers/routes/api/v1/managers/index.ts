@@ -10,6 +10,7 @@ import SetUserState from "#app/services/set-user-state.js"
 import DeleteUser from "#app/services/delete-user.js"
 import GetManagerList from "#app/services/get-manager-list.js"
 import GetManager from "#app/services/get-manager.js"
+import MongoSubscriptionRepository from "#app/repositories/mongo/MongoSubscriptionRepository.js"
 
 
 export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) => {
@@ -17,12 +18,13 @@ export default (adlogs: Adlogs, archange: Archange, mongoClient: MongoClient) =>
 
     /** ### Load Repositories ### */
     const userRepository = new MongoUserRepository(mongoClient, 'anywhere')
-    const setUserState = new SetUserState(adlogs, archange, userRepository)
-    const deleteUser = new DeleteUser(adlogs, archange, userRepository)
+    const subscriptionRepository = new MongoSubscriptionRepository(mongoClient, 'anywhere')
 
     /** ### Load Services ### */
+    const setUserState = new SetUserState(adlogs, archange, userRepository)
+    const deleteUser = new DeleteUser(adlogs, archange, userRepository)
     const getManagerList = new GetManagerList(adlogs, userRepository)
-    const getManager = new GetManager(adlogs, userRepository)
+    const getManager = new GetManager(adlogs, userRepository, subscriptionRepository)
 
     /** ### Router dispatching ### */
     router.get('/get-all', async(req, res) => {

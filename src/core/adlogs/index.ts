@@ -24,7 +24,7 @@ type EventMessageListenner = {
  * k-engine
  */
 
-export default class {
+class Adlogs {
     public hub = new EventEmitter()
     private runtimeEventMessageListennerList: Array<EventMessageListenner> = []
     private pendingLogItems: RuntimeEvent[] = []
@@ -106,3 +106,5 @@ export default class {
         }
     }
 }
+
+export default Adlogs

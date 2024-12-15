@@ -128,6 +128,12 @@ const Config = {
         },
         tracking_bot: {
             devices_directory: '/modules/tracking-bot/devices',
+            anytracker: {
+                timeout: {
+                    ghost: 60,
+                    off: 30
+                }
+            },
             trip_limit: {
                 min_move_duration: 300,
                 max_stop_duration: 300,

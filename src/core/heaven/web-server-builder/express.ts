@@ -37,7 +37,7 @@ const expressServer = (adlogs: Adlogs, engineConfig: ConfigType, mongoBase: Mong
     webServer.use(ExpressApp.json())
     webServer.disable('x-powered-by')
     engineConfig.infrastructure.web.secured && webServer.use(Helmet())
-    webServer.use(Cors({ credentials: true, origin: ['http://192.168.0.26:5173'] }))
+    webServer.use(Cors({ credentials: true, origin: ['http://192.168.0.26', 'http://192.168.0.26:5173'] }))
 
     // -> Favicon serving
     try {

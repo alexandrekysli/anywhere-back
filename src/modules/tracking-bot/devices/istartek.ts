@@ -147,7 +147,7 @@ class iStartekTrackerDevice implements ITrackerDevice {
                 indexs.forEach(x => this.commandStack.splice(x, 1))
                 if(message.cmd_code === 801) {
                     this.onNewEvent({ 
-                        date: 0,
+                        date: Date.now(),
                         brand: 'istartek',
                         imei: message.imei,
                         event: 'command-response',
@@ -155,13 +155,13 @@ class iStartekTrackerDevice implements ITrackerDevice {
                             name: 'device-info',
                             data: {
                                 sn: message.cmd_data[0],
-                                model: message.cmd_data[2].replace(/_V(([0-9]|[a-z])+)/gi, '').replace(/_/gi, ' ')
+                                model: message.cmd_data[2].replace(/_V(([0-9]|[a-z])+)/gi, '').replace(/_/gi, ' '),
+                                brand: 'istartek'
                             }
                         }
                     })
                 }else{
-                    console.log(message);
-                    
+                    console.log(message)
                 }
             }
         }else{
@@ -270,7 +270,7 @@ class iStartekTrackerDevice implements ITrackerDevice {
         })
     }
 
-    async exeCommand(imei: string, name: "device-info" | "relay-on" | "relay-off"){
+    async exeCommand(imei: string, name: TrackerCommand){
         if(name === 'device-info') this.commandStack.push({ imei: imei, code: 801, cmd: '' })
         else if(name === 'relay-on') this.commandStack.push({ imei: imei, code: 900, cmd: '1,1,0,0' })
         else if(name === 'relay-off') this.commandStack.push({ imei: imei, code: 900, cmd: '1,0,0,0' })

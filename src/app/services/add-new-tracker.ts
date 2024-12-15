@@ -31,7 +31,7 @@ class AddNewTracker {
                 ))
         
                 if(newTracker.data){
-                    this.adlogs.hub.emit('new-tracker-insert', data.imei)
+                    this.adlogs.hub.emit('new-tracker-insert', { imei: data.imei, id: newTracker.data.id })
                     return { id: newTracker.data.id  }
                 }
                 else  err = newTracker.err || ''

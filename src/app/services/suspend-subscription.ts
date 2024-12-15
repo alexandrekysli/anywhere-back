@@ -1,8 +1,10 @@
+import VehicleEntity from "#app/entities/vehicle.js"
+import IPairingRepository from "#app/repositories/IPairingRepository.js"
 import ISubscriptionRepository from "#app/repositories/ISubscriptionRepository.js"
 import Adlogs from "#core/adlogs/index.js"
 
 class SuspendSubscription {
-    constructor(private adlogs: Adlogs, private repository: ISubscriptionRepository){}
+    constructor(private adlogs: Adlogs, private repository: ISubscriptionRepository, private pairingRepository: IPairingRepository){}
 
     public execute = async (id: string): Promise<{ pass: boolean }> => {
         let err = ''
@@ -22,10 +24,26 @@ class SuspendSubscription {
             }
 
             if(pass){
-                // -> Suspended concern subscription now !!! 
+                // -> Suspended concern subscription now !!!
                 const result = await this.repository.suspendSubscription(id)
                 if(result.err) err = result.err
-                else return { pass: true }
+                else{
+                    const vehicleList: string[] = []
+                    let pairingList: string[] = []
+                    const oldSubscriptionData = (await this.repository.getSubscription(id)).data
+                    if(oldSubscriptionData){
+                        oldSubscriptionData.vehicle.forEach(vehicle => {
+                            if(vehicle instanceof VehicleEntity) vehicleList.push(String(vehicle.id))
+                        })
+                    }
+                    for (const vehicle of vehicleList) {
+                        const vehiclePairingList = (await this.pairingRepository.getPairingbyVehicle(String(vehicle), false)).data
+                        if(vehiclePairingList) pairingList = [...pairingList, ...vehiclePairingList.map(pairing => String(pairing.id))]
+                    }
+                    // -> Notify TrackingBot
+                    pairingList.forEach(pairing =>  this.adlogs.hub.emit('refresh-pairing', pairing))
+                    return { pass: true }
+                }
             }
         }
         

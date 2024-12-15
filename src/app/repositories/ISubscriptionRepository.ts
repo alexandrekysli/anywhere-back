@@ -6,6 +6,7 @@ interface ISubscriptionRepository {
     getLastSubscriptionByCustomer(customer: string): Promise<{ data?: SubscriptionEntity | null, err?: string }>
     getChildSubscription(dependency: string): Promise<SubscriptionEntity[] | Error>
     getSubscriptionByCustomer(customer: string): Promise<{ data?: SubscriptionEntity[], err?: string }>
+    getSubscriptionByManager(manager: string): Promise<{ data?: SubscriptionEntity[], err?: string }>
     getSubscriptionByPackage(_package: string): Promise<{ data?: SubscriptionEntity[], err?: string }>
     getSubscriptionByVehicle(vehicle: string): Promise<{ data?: SubscriptionEntity[], err?: string }>
     getActiveSubscriptionByCustomer(customer: string): Promise<{ data?: SubscriptionEntity[], err?: string }>

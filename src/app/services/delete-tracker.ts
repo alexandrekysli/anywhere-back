@@ -8,7 +8,10 @@ class DeleteTracker {
         let err = ''
 
         const removeState = await this.repository.removeTracker(id)
-        if(removeState.data) return { pass : true }
+        if(removeState.data){
+            this.adlogs.hub.emit('tracker-removed', id)
+            return { pass : true }
+        }
         else err = removeState.err || ''
 
         if(err){

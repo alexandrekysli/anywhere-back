@@ -27,6 +27,7 @@ class GetCustomer {
             const godfather = await this.userRepository.getUserByID(customer.data.godfather.toString())
             const manager = await this.userRepository.getUserByID(customer.data.manager.toString())
             const activeSubscription = await this.subscriptionRepository.getActiveSubscriptionByCustomer(customer.data.id || '')
+
             if(godfather.data && manager.data && activeSubscription.data){
                 return {
                     recap: {
