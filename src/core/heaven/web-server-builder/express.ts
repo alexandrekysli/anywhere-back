@@ -1,13 +1,12 @@
 import http from "node:http"
 
 import Adlogs from "#core/adlogs/index.js"
-import { ConfigType } from "../../../config"
+import Config, { ConfigType } from "../../../config"
 import { MongoBase } from "../../rock"
 
 import ExpressApp from "express"
 import ExpressSession from "express-session"
 import Cors from "cors"
-import ServeFavicon from "serve-favicon"
 import Helmet from "helmet"
 import MongoStore from "connect-mongo"
 
@@ -37,21 +36,7 @@ const expressServer = (adlogs: Adlogs, engineConfig: ConfigType, mongoBase: Mong
     webServer.use(ExpressApp.json())
     webServer.disable('x-powered-by')
     engineConfig.infrastructure.web.secured && webServer.use(Helmet())
-    webServer.use(Cors({ credentials: true, origin: ['http://192.168.0.26', 'http://192.168.0.26:5173'] }))
-
-    // -> Favicon serving
-    try {
-        webServer.use(ServeFavicon(engineConfig.root + '/public/favicon.ico'))        
-    } catch (err) {
-        if(err instanceof Error){
-            adlogs.writeRuntimeEvent({
-                category: 'heaven',
-                type: 'stop',
-                message: `unabled to load favicon file < ${err.message} >`,
-                save: true
-            })
-        }
-    }
+    webServer.use(Cors({ credentials: true, origin: Config.infrastructure.web.cors_origins}))
     
     // -> Express Session Configuration
     webServer.use(ExpressSession({

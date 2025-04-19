@@ -39,6 +39,7 @@ class TrackingBot {
     private io?: ServerIO
     private services
     private tripMaker
+    private move = false
 
     constructor(
         engineConfig: ConfigType,
@@ -176,6 +177,16 @@ class TrackingBot {
             const anyTracker = this.anyTrackerList.filter(x => x.device.imei === data.imei)[0]
             
             if(data.event !== 'command-response' && data.state){
+                /* if(data.imei === '866069061516454' && data.state){
+                    console.log((data.imei + ' > '), data.state.gps?.coordinates);
+                    if(data.state.gps?.speed){
+                        if(!this.move){
+                            this.move = true
+                            console.log('move !!!');
+                        }
+                    }else this.move = false
+                } */
+
                 if(anyTracker){
                     if(anyTracker.registering === 1){
                         // -> Already existing registered tracker

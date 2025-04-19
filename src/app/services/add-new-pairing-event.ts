@@ -22,8 +22,27 @@ class AddNewPairingEvent {
             // -> Retrieve last pairing event
             const lastPosition = await this.repository.getLastPairingEvent(pairingID)
             if(lastPosition.err) err = lastPosition.err || ''
-            else{                
-                if(state.gps && state.gps.speed){
+            else{
+                if(!lastPosition.data && state.gps){
+                    const entity = new PairingEventEntity(
+                        date,
+                        event,
+                        event === event,
+                        { gps: state.gps.coordinates, location: '' },
+                        state.gps.orientation,
+                        state.gps.speed,
+                        state.gps.altitude,
+                        state.gps.odometer,
+                        state.device.battery,
+                        state.device.network.signal,
+                        fenceValue,
+                        state.io.acc,
+                        state.io.relay,
+                        state.io.buzzer,
+                        pairingID
+                    )
+                    return await this.customSave(entity)
+                }else if(state.gps && state.gps.speed){
                     // -> With coordinates 
                     const distance = lastPosition.data ? (Utils.distanceBetweenCoordinates(state.gps.coordinates, lastPosition.data.localisation.gps) * 1000) : 15                    
                     if(distance >= /* 15 */ 40){

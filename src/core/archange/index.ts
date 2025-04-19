@@ -69,7 +69,7 @@ class Archange {
      * @returns `RequestOrigin`
      */
     private getExpressRequestOrigin = (req: Request) : RequestOrigin => {
-        const ip = (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'][0] || req.socket.remoteAddress || 'socket-lost').replace(/([a-z]|:)+/, '')
+        const ip = (req.headers['x-forwarded-for'] && String(req.headers['x-forwarded-for']) || req.socket.remoteAddress || 'socket-lost').replace(/([a-z]|:)+/, '')
         const heavenKnowFootprint = req.session.heaven_kf
         const archangeUserHash = req.session.archange_hash
         const ua = uap(req.headers['user-agent'])

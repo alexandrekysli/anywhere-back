@@ -180,6 +180,21 @@ class Email {
         return await this.exeMailSend(mail)
     }
 
+    debug = async (email: string) => {
+        const mail = {
+            to: [email],
+            data: {
+                from: 'Anywhere',
+                subject: 'Débogage',
+                message: {
+                    text: 'Ceci est un test !',
+                    html: undefined
+                }
+            }
+        }
+        return await this.exeMailSend(mail)
+    }
+
 }
 
 export default Email

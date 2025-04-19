@@ -25,7 +25,7 @@ class GetUserPairingList {
         const pairingList: string[] = []
 
         const user = await this.userRepository.getUserByID(userID)
-        const allPairing = ((await this.pairingRepository.getAllPairing(true)).data || []).filter(x => x.event_list.length)
+        const allPairing = ((await this.pairingRepository.getAllPairing(true)).data || [])/* .filter(x => x.event_list.length) */
 
         if(user.data){
             if(['particular', 'corporate'].includes(user.data.type)){

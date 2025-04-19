@@ -87,7 +87,8 @@ const Config = {
             session: {
                 secret: getParsedProperty('KE_HTTP_SESSION_SECRET').toString(),
                 cookie_max_day: parseInt(getParsedProperty('KE_HTTP_SESSION_MAXDAY').toString(), 10) * 86400000
-            }
+            },
+            cors_origins: ['http://19.95.0.2:5173', 'http://anywhere.mkexpertise.com', 'https://anywhere.mkexpertise.com']
         },
         database: {
             mongo: {

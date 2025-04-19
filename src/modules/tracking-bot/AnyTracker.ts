@@ -76,6 +76,8 @@ class AnyTracker {
     public registering = -1
     public fenceArea: TrackData['fence']
 
+    private one = true
+
     constructor(
         adlogs: Adlogs,
         private io: ServerIO,
@@ -172,7 +174,7 @@ class AnyTracker {
             }
 
             if(newState && newState !== oldState){
-                console.log(`new state [ ${newState} ] detected for vehicle < ${this.vehicle?.numberplate} >`)
+                // console.log(`new state [ ${newState} ] detected for vehicle < ${this.vehicle?.numberplate} >`)
                 this.state = newState
                 return true
             }
@@ -304,8 +306,13 @@ class AnyTracker {
                                 io: { relay: state.io.relay, buzzer: state.io.buzzer}
                             })
                         }
-
-                        //console.log('❤️ ' + this.vehicle.numberplate + ' > ' + new Date(date).toLocaleString());
+                        if(!this.one && this.device.imei === '866069061521975'){
+                            console.log('reset !!!');
+                            this.exeCommand('initialize')
+                            this.one = true
+                            
+                        }
+                        // console.log('❤️ ' + this.vehicle.numberplate + ' > ' + new Date(date).toLocaleString());
                         
                         // -> Save event when subscription is only actual
                         if(this.subscription.status() === 'actual'){
@@ -333,13 +340,13 @@ class AnyTracker {
                                             const vehicleFullModel = this.vehicle.brand + ' ' + this.vehicle.model
                                             // -> Mail
                                             if(this.subscription._package.allowed_option.includes('Email')){
-                                                if(event === 'sos') this.email.sendVehicleAlertSOS(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, location)
-                                                else if(event === 'relay-on') this.email.sendVehicleAlertEngineLock(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, location)
-                                                else if(event === 'speeding') this.email.sendVehicleAlertOverspeed(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, result.speed, this.vehicle.max_speed, location)
-                                                else if(event === 'suspicious-activity') this.email.sendVehicleAlertAntiTheft(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, location)
-                                                else if(event === 'impact') this.email.sendVehicleAlertImpact(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, location)
+                                                if(event === 'sos') this.email.sendVehicleAlertSOS(this.customer.email, vehicleFullModel, this.vehicle.numberplate, location)
+                                                else if(event === 'relay-on') this.email.sendVehicleAlertEngineLock(this.customer.email, vehicleFullModel, this.vehicle.numberplate, location)
+                                                else if(event === 'speeding') this.email.sendVehicleAlertOverspeed(this.customer.email, vehicleFullModel, this.vehicle.numberplate, result.speed, this.vehicle.max_speed, location)
+                                                else if(event === 'suspicious-activity') this.email.sendVehicleAlertAntiTheft(this.customer.email, vehicleFullModel, this.vehicle.numberplate, location)
+                                                else if(event === 'impact') this.email.sendVehicleAlertImpact(this.customer.email, vehicleFullModel, this.vehicle.numberplate, location)
                                                 else if(['fence-in', 'fence-out'].includes(event) && this.fenceArea){
-                                                    this.email.sendVehicleAlertFence(this.customer.phone, vehicleFullModel, this.vehicle.numberplate, event === 'fence-in' ? 'entré' : 'sorti', location, this.fenceArea.name)
+                                                    this.email.sendVehicleAlertFence(this.customer.email, vehicleFullModel, this.vehicle.numberplate, event === 'fence-in' ? 'entré' : 'sorti', location, this.fenceArea.name)
                                                 }
                                             }
                                             // -> SMS

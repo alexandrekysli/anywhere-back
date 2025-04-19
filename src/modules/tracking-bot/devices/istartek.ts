@@ -1,7 +1,7 @@
 import net from "node:net"
 
-import Adlogs from "#core/adlogs/index.js"
 import ITrackerDevice from "../ITrackerDevice"
+import Adlogs from "#core/adlogs/index.js"
 
 /** TS */
 type StartekTrackerEvent = {
@@ -49,7 +49,7 @@ type StartekTrackerResponse = {
 }
 
 class iStartekTrackerDevice implements ITrackerDevice {
-    public port = 9091
+    public port = 1996
     private eventCode = {
         0: 'state',
         1: 'sos',
@@ -223,12 +223,6 @@ class iStartekTrackerDevice implements ITrackerDevice {
     public makeServer(): void {
         const server = net.createServer()
         server.on('connection', socket => {
-            /* this.adlogs.writeRuntimeEvent({
-                category: 'app',
-                type: 'info',
-                message: 'istartek device connect with ip ' + socket.remoteAddress
-            }) */
-            
             socket.on('data', (data) => {
                 const eventData = this.decodeMessage(data.toString())
                 if(eventData){
@@ -274,6 +268,7 @@ class iStartekTrackerDevice implements ITrackerDevice {
         if(name === 'device-info') this.commandStack.push({ imei: imei, code: 801, cmd: '' })
         else if(name === 'relay-on') this.commandStack.push({ imei: imei, code: 900, cmd: '1,1,0,0' })
         else if(name === 'relay-off') this.commandStack.push({ imei: imei, code: 900, cmd: '1,0,0,0' })
+        else if(name === 'initialize') this.commandStack.push({ imei: imei, code: 102, cmd: '5' })
     }
 
     // -> Inbuilt method
